@@ -1,0 +1,5 @@
+{
+	"name": "vapi",
+	"path": "/opt/smartdc/vapi/config.json",
+	"post_cmd": "/usr/sbin/svcadm restart vapi"
+}
