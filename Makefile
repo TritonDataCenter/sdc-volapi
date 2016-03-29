@@ -55,6 +55,10 @@ else
 endif
 include ./tools/mk/Makefile.smf.defs
 
+ROOT            := $(shell pwd)
+RELEASE_TARBALL := vapi-pkg-$(STAMP).tar.bz2
+RELSTAGEDIR     := /tmp/$(STAMP)
+
 #
 # Repo-specific targets
 #
