@@ -30,6 +30,9 @@
     "papi": {
         "url": "http://{{{PAPI_SERVICE}}}"
     },
+    "vmapi": {
+        "url": "http://{{{VMAPI_SERVICE}}}"
+    },
     "moray": {
         "host": "{{{MORAY_SERVICE}}}",
         "port": 2020,
