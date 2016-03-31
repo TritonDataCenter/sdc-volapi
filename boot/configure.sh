@@ -14,7 +14,7 @@ export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}
 set -o xtrace
 
 echo "Updating SMF manifest"
-$(/opt/local/bin/gsed -i"" -e "s/@@PREFIX@@/\/opt\/smartdc\/vapi/g" /opt/smartdc/vapi/smf/manifests/vmapi.xml)
+$(/opt/local/bin/gsed -i"" -e "s/@@PREFIX@@/\/opt\/smartdc\/vapi/g" /opt/smartdc/vapi/smf/manifests/vapi.xml)
 
 echo "Importing vapi.xml"
 /usr/sbin/svccfg import /opt/smartdc/vapi/smf/manifests/vapi.xml
