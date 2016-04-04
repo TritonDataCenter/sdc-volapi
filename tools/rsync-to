@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2016, Joyent, Inc.
+#
+
+#
+# Rsync the master in this working copy to the install on the given HN.
+#
+
+#set -o xtrace
+set -o errexit
+
+TOP=$(cd $(dirname $0)/../; pwd)
+NODE="root@$1"
+
+if [[ -z "$VAPI_ZONE" ]]; then
+    VAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=vapi0" 2>/dev/null)
+fi
+echo "VAPI_ZONE: $VAPI_ZONE"
+
+extraOpts=
+if [[ $(uname -s) != "SunOS" ]]; then
+    extraOpts="--exclude *.node --exclude build"
+else
+    # Clean node_modules everytime.
+    ssh $NODE rm -rf /zones/$VAPI_ZONE/root/opt/smartdc/vapi/node_modules
+fi
+
+rsync -av ${TOP}/ \
+    $NODE:/zones/$VAPI_ZONE/root/opt/smartdc/vapi/ \
+    $extraOpts \
+    --exclude .git/ \
+    --exclude /config.json \
+    --exclude /deps/ \
+    --exclude /doc/ \
+    --exclude /tools/ \
+    --exclude /tmp/
+
+state=$(ssh ${NODE} svcs -z ${VAPI_ZONE} -H -o state vapi)
+if [[ "$state" == "maintenance" ]]; then
+    ssh ${NODE} svcadm -z ${VAPI_ZONE} clear vapi
+else
+    ssh ${NODE} svcadm -z ${VAPI_ZONE} restart vapi
+fi
