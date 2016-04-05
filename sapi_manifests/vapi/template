@@ -5,11 +5,6 @@
     "api": {
         "port": 80
     },
-    "overlay": {
-{{#fabric_cfg}}
-        "natPool": "{{{sdc_nat_pool}}}"
-{{/fabric_cfg}}
-    },
     "wfapi": {
         "forceMd5Check": true,
         "workflows": [
