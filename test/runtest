@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright (c) 2015, Joyent, Inc.
+#
+
+# Run a single test of any type.
+
+if [ "$TRACE" != "" ]; then
+    export PS4='${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+    set -o xtrace
+fi
+set -o errexit
+set -o pipefail
+
+
+TOP=$(cd $(dirname $0)/../; pwd)
+MISSING_FILE="true"
+NODE_INSTALL=$TOP/build/node
+TAPE=$TOP/node_modules/.bin/tape
+UNAME=$(uname -s)
+
+if [[ -n $1 ]]; then
+    if [[ -f $1 ]]; then
+        MISSING_FILE="false"
+    else
+        echo "$(basename $0): $1 does not exist" >&2
+    fi
+fi
+if [[ ${MISSING_FILE} == "true" || -n $2 ]]; then
+    echo "Usage: $0 <test>"
+    exit 2
+fi
+
+# Include common functions (eg. fatal) and perform sanity checks
+source $(dirname $0)/runtest.common
+
+PATH=$NODE_INSTALL/bin:$PATH $TAPE $1

@@ -14,7 +14,7 @@ var Logger = require('bunyan');
 var vapi = require('./lib/vapi');
 var configLoader = require('./lib/config-loader');
 
-var config = configLoader.loadConfig();
+var config = configLoader.loadConfigSync();
 var log = new Logger({
     name: 'vapi',
     level: config.logLevel || 'debug',

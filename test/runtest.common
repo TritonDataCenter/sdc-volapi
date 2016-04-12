@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+
+#
+# Copyright 2016, Joyent, Inc.
+#
+
+#
+# Common checks/functions that we want in both runtest and runtests.
+#
+
+
+#---- support functions
+
+function fatal
+{
+    echo "$(basename $0): fatal error: $*"
+    exit 1
+}
+
+
+# Guard
+guard_file=/lib/sdc/.sdc-test-no-production-data
+if [[ $(uname) == "SunOS" && ! -f "$guard_file" ]]; then
+    cat <<EOF
+To run this test you must create the file:
+
+    $guard_file
+
+after ensuring you have no production data on this SDC.
+EOF
+    exit 2
+fi
