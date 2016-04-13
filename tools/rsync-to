@@ -18,22 +18,23 @@ set -o errexit
 
 TOP=$(cd $(dirname $0)/../; pwd)
 NODE="root@$1"
+SERVICE=volapi
 
-if [[ -z "$VAPI_ZONE" ]]; then
-    VAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=vapi0" 2>/dev/null)
+if [[ -z "$VOLAPI_ZONE" ]]; then
+    VOLAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=volapi0" 2>/dev/null)
 fi
-echo "VAPI_ZONE: $VAPI_ZONE"
+echo "VOLAPI_ZONE: $VOLAPI_ZONE"
 
 extraOpts=
 if [[ $(uname -s) != "SunOS" ]]; then
     extraOpts="--exclude *.node --exclude build"
 else
     # Clean node_modules everytime.
-    ssh $NODE rm -rf /zones/$VAPI_ZONE/root/opt/smartdc/vapi/node_modules
+    ssh $NODE rm -rf /zones/$VOLAPI_ZONE/root/opt/smartdc/${SERVICE}/node_modules
 fi
 
 rsync -av ${TOP}/ \
-    $NODE:/zones/$VAPI_ZONE/root/opt/smartdc/vapi/ \
+    $NODE:/zones/$VOLAPI_ZONE/root/opt/smartdc/${SERVICE}/ \
     $extraOpts \
     --exclude .git/ \
     --exclude /config.json \
@@ -42,9 +43,9 @@ rsync -av ${TOP}/ \
     --exclude /tools/ \
     --exclude /tmp/
 
-state=$(ssh ${NODE} svcs -z ${VAPI_ZONE} -H -o state vapi)
+state=$(ssh ${NODE} svcs -z ${VOLAPI_ZONE} -H -o state ${SERVICE})
 if [[ "$state" == "maintenance" ]]; then
-    ssh ${NODE} svcadm -z ${VAPI_ZONE} clear vapi
+    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} clear ${SERVICE}
 else
-    ssh ${NODE} svcadm -z ${VAPI_ZONE} restart vapi
+    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} restart ${SERVICE}
 fi

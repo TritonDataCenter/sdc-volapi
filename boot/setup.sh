@@ -25,7 +25,7 @@ sdc_common_setup
 # Cookie to identify this as a SmartDC zone and its role
 mkdir -p /var/smartdc/$role
 
-# Install VAPI
+# Install VOLAPI
 mkdir -p /opt/smartdc/${role}
 chown -R nobody:nobody /opt/smartdc/${role}
 
