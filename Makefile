@@ -23,8 +23,8 @@ JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE	 = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
 JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
-#REPO_MODULES	 = src/node-dummy
-SMF_MANIFESTS_IN = smf/manifests/vapi.xml.in
+SERVICE_NAME     = volapi
+SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME).xml.in
 
 NODE_PREBUILT_VERSION=v0.10.40
 
@@ -42,7 +42,7 @@ endif
 include ./tools/mk/Makefile.smf.defs
 
 ROOT            := $(shell pwd)
-RELEASE_TARBALL := vapi-pkg-$(STAMP).tar.bz2
+RELEASE_TARBALL := $(SERVICE_NAME)-pkg-$(STAMP).tar.bz2
 RELSTAGEDIR     := /tmp/$(STAMP)
 
 #
@@ -60,10 +60,10 @@ CLEAN_FILES += $(TAP) ./node_modules/tap
 .PHONY: release
 release: all deps docs $(SMF_MANIFESTS)
 	@echo "Building $(RELEASE_TARBALL)"
-	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/vapi/build
+	@mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/$(SERVICE_NAME/build
 	@mkdir -p $(RELSTAGEDIR)/site
 	@touch $(RELSTAGEDIR)/site/.do-not-delete-me
-	cp -PR $(NODE_INSTALL) $(RELSTAGEDIR)/root/opt/smartdc/vapi/build/node
+	cp -PR $(NODE_INSTALL) $(RELSTAGEDIR)/root/opt/smartdc/$(SERVICE_NAME/build/node
 	cp -r $(ROOT)/lib \
     $(ROOT)/server.js \
     $(ROOT)/Makefile \
@@ -72,7 +72,7 @@ release: all deps docs $(SMF_MANIFESTS)
     $(ROOT)/sapi_manifests \
     $(ROOT)/smf \
     $(ROOT)/tools \
-    $(RELSTAGEDIR)/root/opt/smartdc/vapi/
+    $(RELSTAGEDIR)/root/opt/smartdc/$(SERVICE_NAME/
 	mkdir -p $(RELSTAGEDIR)/root/opt/smartdc/boot
 	cp -R $(ROOT)/deps/sdc-scripts/* $(RELSTAGEDIR)/root/opt/smartdc/boot/
 	cp -R $(ROOT)/boot/* $(RELSTAGEDIR)/root/opt/smartdc/boot/
@@ -86,8 +86,8 @@ publish: release
     echo "error: 'BITS_DIR' must be set for 'publish' target"; \
     exit 1; \
   fi
-	mkdir -p $(BITS_DIR)/vapi
-	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/vapi/$(RELEASE_TARBALL)
+	mkdir -p $(BITS_DIR)/$(SERVICE_NAME)
+	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/$(SERVICE_NAME/$(RELEASE_TARBALL)
 
 .PHONY: test
 test: $(TAP)

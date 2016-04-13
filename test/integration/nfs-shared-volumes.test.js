@@ -70,7 +70,7 @@ test('nfs shared volumes', function (tt) {
             networks: [NETWORKS[0].uuid]
         };
 
-        CLIENTS.vapi.createVolume({
+        CLIENTS.volapi.createVolume({
             payload: volumeParams,
             sync: true
         }, function onVolumeCreated(err, volume) {
@@ -136,7 +136,7 @@ test('nfs shared volumes', function (tt) {
 
     tt.test('newly created volume should show up in list endpoint',
         function (t) {
-            CLIENTS.vapi.listVolumes(function onVolumesListed(err, volumes) {
+            CLIENTS.volapi.listVolumes(function onVolumesListed(err, volumes) {
                 var newlyCreatedVolumeFound = false;
 
                 function isNewlyCreatedVolume(volume) {
@@ -154,7 +154,7 @@ test('nfs shared volumes', function (tt) {
     tt.test('cleanup', function (t) {
         vasync.parallel({funcs: [
             function deleteSharedVolume(done) {
-                CLIENTS.vapi.deleteVolume({
+                CLIENTS.volapi.deleteVolume({
                     uuid: sharedNfsVolume.uuid,
                     owner_uuid: UFDS_ADMIN_UUID
                 }, function onVolumeDeleted(err) {

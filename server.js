@@ -11,17 +11,17 @@
 var restify = require('restify');
 var Logger = require('bunyan');
 
-var vapi = require('./lib/vapi');
+var volapi = require('./lib/volapi');
 var configLoader = require('./lib/config-loader');
 
 var config = configLoader.loadConfigSync();
 var log = new Logger({
-    name: 'vapi',
+    name: 'volapi',
     level: config.logLevel || 'debug',
     serializers: restify.bunyan.serializers
 });
 
-vapi.init(config, log, function onVapiInitialized(err, server) {
+volapi.init(config, log, function onVolApiInitialized(err, server) {
      server.listen(config.api.port || 80, '0.0.0.0', function onListen() {
          log.info({url: server.url}, '%s listening', server.name);
      });

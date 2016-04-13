@@ -15,7 +15,7 @@ set -o xtrace
 
 PATH=/opt/local/bin:/opt/local/sbin:/usr/bin:/usr/sbin
 
-role=vapi
+role=volapi
 
 # Include common utility functions (then run the boilerplate)
 source /opt/smartdc/boot/lib/util.sh
@@ -26,12 +26,12 @@ sdc_common_setup
 mkdir -p /var/smartdc/$role
 
 # Install VAPI
-mkdir -p /opt/smartdc/vapi
-chown -R nobody:nobody /opt/smartdc/vapi
+mkdir -p /opt/smartdc/${role}
+chown -R nobody:nobody /opt/smartdc/${role}
 
 # Add build/node/bin and node_modules/.bin to PATH
 echo "" >>/root/.profile
-echo "export PATH=\$PATH:/opt/smartdc/vapi/build/node/bin:/opt/smartdc/vapi/node_modules/.bin" >>/root/.profile
+echo "export PATH=\$PATH:/opt/smartdc/${role}/build/node/bin:/opt/smartdc/${role}/node_modules/.bin" >>/root/.profile
 
 echo "Adding log rotation"
 # Log rotation.

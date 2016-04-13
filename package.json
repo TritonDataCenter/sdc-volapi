@@ -1,5 +1,5 @@
 {
-  "name": "sdc-vapi",
+  "name": "sdc-volapi",
   "version": "1.0.0",
   "description": "SDC's Volumes API",
   "main": "server.js",
@@ -16,7 +16,7 @@
     "mkdirp": "^0.5.1",
     "moray": "git+ssh://git@github.com:joyent/node-moray.git#b84ef0e",
     "restify": "^4.0.4",
-    "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients.git#0a935dfb2553cbeaa6ee59c563db229b0fb36012",
+    "sdc-clients": "git+ssh://git@github.com:joyent/node-sdc-clients.git#f1633e0aa83b9dca1e844c62fa10f20476cca1af",
     "trace-event": "^1.3.0",
     "vasync": "^1.6.4"
   },
