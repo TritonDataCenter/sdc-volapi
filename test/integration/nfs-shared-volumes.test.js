@@ -70,17 +70,15 @@ test('nfs shared volumes', function (tt) {
             networks: [NETWORKS[0].uuid]
         };
 
-        CLIENTS.volapi.createVolume({
-            payload: volumeParams,
-            sync: true
-        }, function onVolumeCreated(err, volume) {
-            t.ifErr(err, 'volume should have been created successfully');
-            t.equal(volume.name, volumeName, 'volume name should be '
-                + volumeName);
+        CLIENTS.volapi.createVolume(volumeParams,
+            function onVolumeCreated(err, volume) {
+                t.ifErr(err, 'volume should have been created successfully');
+                t.equal(volume.name, volumeName, 'volume name should be '
+                    + volumeName);
 
-            sharedNfsVolume = volume;
-            t.end();
-        });
+                sharedNfsVolume = volume;
+                t.end();
+            });
     });
 
     tt.test('newly created shared volume not listed int VMAPI ListVms output '

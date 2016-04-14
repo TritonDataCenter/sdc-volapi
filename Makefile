@@ -89,9 +89,11 @@ publish: release
 	mkdir -p $(BITS_DIR)/$(SERVICE_NAME)
 	cp $(ROOT)/$(RELEASE_TARBALL) $(BITS_DIR)/$(SERVICE_NAME)/$(RELEASE_TARBALL)
 
-.PHONY: test
-test: $(TAP)
-	TAP=1 $(TAP) test/*.test.js
+.PHONY: test-coal
+COAL=root@10.99.99.7
+test-coal:
+	./tools/rsync-to coal
+	ssh $(COAL) "/opt/smartdc/bin/sdc-login -l ${SERVICE_NAME} /opt/smartdc/${SERVICE_NAME}/test/runtests"
 
 include ./tools/mk/Makefile.deps
 ifeq ($(shell uname -s),SunOS)
