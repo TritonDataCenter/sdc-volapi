@@ -40,7 +40,6 @@ rsync -av ${TOP}/ \
     --exclude /config.json \
     --exclude /deps/ \
     --exclude /doc/ \
-    --exclude /tools/ \
     --exclude /tmp/
 
 state=$(ssh ${NODE} svcs -z ${VOLAPI_ZONE} -H -o state ${SERVICE})

@@ -28,6 +28,9 @@
     "vmapi": {
         "url": "http://{{{VMAPI_SERVICE}}}"
     },
+    "sapi": {
+        "url": "http://{{{SAPI_SERVICE}}}"
+    },
     "moray": {
         "host": "{{{MORAY_SERVICE}}}",
         "port": 2020,

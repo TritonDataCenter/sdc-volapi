@@ -17,7 +17,7 @@ TAP		:= ./node_modules/.bin/tap
 # Files
 #
 #DOC_FILES	 = index.restdown boilerplateapi.restdown
-JS_FILES	:= $(shell ls *.js) $(shell find lib test -name '*.js')
+JS_FILES	:= $(shell ls *.js) $(shell find lib tools test -name '*.js')
 JSON_FILES	 = package.json
 JSL_CONF_NODE	 = tools/jsl.node.conf
 JSL_FILES_NODE	 = $(JS_FILES)
@@ -103,3 +103,7 @@ else
 endif
 include ./tools/mk/Makefile.smf.targ
 include ./tools/mk/Makefile.targ
+
+.PHONY: setup-coal
+setup-coal:
+	sh tools/setup/coal-setup.sh
