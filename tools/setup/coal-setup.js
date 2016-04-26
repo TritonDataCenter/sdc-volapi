@@ -482,8 +482,8 @@ function setupVolapi() {
                     next(err);
                 } else if (images && images.length) {
                     images.forEach(function filterLatestTritonNfsImage(image) {
-                        var imageIsNewer = tritonNfsImage === undefined
-                            || image.version > tritonNfsImage;
+                        var imageIsNewer = tritonNfsImage === undefined ||
+                            image.version > tritonNfsImage;
 
                         if (image.version.match('tritonnfs') && imageIsNewer) {
                             tritonNfsImage = image;
@@ -510,6 +510,44 @@ function setupVolapi() {
                     return;
                 }
                 next();
+            });
+        },
+
+        function getLatestNfsServerZoneImage(ctx, next) {
+            var filter = {name: 'nfsserver'};
+
+            console.log('Finding latest "nfsserver" image...');
+            updatesImgApiClient.listImages(filter, function (err, images) {
+                if (err) {
+                    next(err);
+                } else if (images && images.length) {
+                    // TODO presuming sorted
+                    ctx.latestNfsServerImg = images[images.length - 1];
+                    console.log('Found "nfsserver" image: ',
+                        ctx.latestNfsServerImg.uuid);
+                    next();
+                } else {
+                    next(new Error('no "nfserver" image found'));
+                }
+            });
+        },
+
+        function haveLatestNfsServerZoneImage(ctx, next) {
+            console.log('Checking if latest "nfsserver" image is imported...');
+
+            localImgApiClient.getImage(ctx.latestNfsServerImg.uuid,
+                    function (err, img_) {
+                if (err && err.body && err.body.code === 'ResourceNotFound') {
+                    console.log('Scheduling import of latest "nfsserver" '
+                        + 'image');
+                    ctx.imgsToDownload.push(ctx.latestNfsServerImg);
+                    next();
+                } else if (err) {
+                    next(err);
+                } else {
+                    console.log('Latest "nfsserver" image already imported');
+                    next();
+                }
             });
         },
 
@@ -737,6 +775,7 @@ function setupVolapi() {
         vmapiClient.close();
         sapiClient.close();
         papiClient.close();
+        dockerClient.close();
         ufdsClient.destroy();
 
         if (err) {
