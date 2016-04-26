@@ -111,3 +111,6 @@ setup-coal:
 .PHONY: test-integration-in-coal
 test-integration-in-coal:
 	@ssh root@coal 'LOG_LEVEL=$(LOG_LEVEL) /zones/$$(vmadm lookup -1 alias=volapi0)/root/opt/smartdc/volapi/test/runtests $(TEST_ARGS)'
+
+.PHONY: test
+test: test-integration-in-coal
