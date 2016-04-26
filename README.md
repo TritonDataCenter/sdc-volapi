@@ -5,40 +5,29 @@
 -->
 
 <!--
-    Copyright (c) 2014, Joyent, Inc.
+    Copyright (c) 2016, Joyent, Inc.
 -->
 
-# Joyent Engineering Guide
+# sdc-volapi
 
-Repository: <git@git.joyent.com:eng.git>
-Browsing: <https://mo.joyent.com/eng>
-Who: Trent Mick, Dave Pacheco
-Docs: <https://mo.joyent.com/docs/eng>
-Tickets/bugs: <https://devhub.joyent.com/jira/browse/TOOLS>
+This repository is part of the Joyent SmartDataCenter project (SDC).  For
+contribution guidelines, issues, and general documentation, visit the main
+[SDC](http://github.com/joyent/sdc) project page.
 
-
-# Overview
-
-This repo serves two purposes: (1) It defines the guidelines and best
-practices for Joyent engineering work (this is the primary goal), and (2) it
-also provides boilerplate for an SDC project repo, giving you a starting
-point for many of the suggestion practices defined in the guidelines. This is
-especially true for node.js-based REST API projects.
-
-Start with the guidelines: <https://mo.joyent.com/docs/eng>
-
+The SDC Volumes API (VOLAPI) manages volumes for SDC. Volumes can be used to
+store data that can be read and/or written by virtual machines (including Docker
+containers, infrastructure containers and hardware virtual machines).
 
 # Repository
-
-    deps/           Git submodules and/or commited 3rd-party deps should go
-                    here. See "node_modules/" for node.js deps.
+    boot/           Shell scripts for booting and configuring the zone
+    deps/           Git submodules that contains dependencies that this
+                    repository uses to perform various tasks, such as code
+                    linting.
     docs/           Project docs (restdown)
     lib/            Source files.
-    node_modules/   Node.js deps, either populated at build time or commited.
-                    See Managing Dependencies.
-    pkg/            Package lifecycle scripts
+    node_modules/   Node.js deps, populated at build time.
+    sapi_manifests/ Service API (SAPI) manifests
     smf/manifests   SMF manifests
-    smf/methods     SMF method scripts
     test/           Test suite (using node-tap)
     tools/          Miscellaneous dev/upgrade/deployment tools and data.
     Makefile
@@ -48,21 +37,13 @@ Start with the guidelines: <https://mo.joyent.com/docs/eng>
 
 # Development
 
-To run the boilerplate API server:
+## Getting started
 
-    git clone git@git.joyent.com:eng.git
-    cd eng
-    git submodule update --init
-    make all
-    node server.js
-
-To update the guidelines, edit "docs/index.restdown" and run `make docs`
-to update "docs/index.html".
+    git clone git@github.com:joyent/sdc-volapi.git
+    cd sdc-volapi
 
 Before commiting/pushing run `make prepush` and, if possible, get a code
 review.
-
-
 
 # Testing
 
@@ -70,20 +51,6 @@ review.
 
 If you project has setup steps necessary for testing, then describe those
 here.
-
-
-# Starting a Repo Based on eng.git
-
-Create a new repo called "some-cool-fish" in your "~/work" dir based on "eng.git":
-Note: run this inside the eng dir.
-
-    ./tools/mkrepo $HOME/work/some-cool-fish
-
-
-# Your Other Sections Here
-
-Add other sections to your README as necessary. E.g. Running a demo, adding
-development data.
 
 
 
