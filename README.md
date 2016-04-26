@@ -39,8 +39,11 @@ containers, infrastructure containers and hardware virtual machines).
 
 ## Getting started
 
-    git clone git@github.com:joyent/sdc-volapi.git
-    cd sdc-volapi
+```
+$ git clone git@github.com:joyent/sdc-volapi.git
+$ cd sdc-volapi
+$ sh tools/setup/coal-setup.sh
+```
 
 Before commiting/pushing run `make prepush` and, if possible, get a code
 review.
@@ -48,9 +51,6 @@ review.
 # Testing
 
     make test
-
-If you project has setup steps necessary for testing, then describe those
-here.
 
 
 
