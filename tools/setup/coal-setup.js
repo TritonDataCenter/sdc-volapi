@@ -14,6 +14,7 @@ var fs = require('fs');
 var ldap = require('ldapjs');
 var once = require('once');
 var path = require('path');
+var restify = require('restify');
 var sdcClients = require('sdc-clients');
 var util = require('util'),
     format = util.format;
@@ -127,12 +128,9 @@ function addSharedVolumePackage(options, packageSettings, callback) {
                 newPackage.quota = packageSettings.size * NB_MBS_IN_GB;
                 newPackage.owner_uuids = packageSettings.owner_uuids;
 
-                LOG.info({pkg: newPackage}, 'Adding package');
-
                 papiClient.add(newPackage, function onPackageAdded(err, pkg) {
                     if (!err && pkg) {
                         ctx.pkgAdded = pkg;
-                        LOG.info({package: pkg}, 'Package added');
                     }
 
                     next(err);
@@ -208,6 +206,7 @@ function setupVolapi() {
     assert.string(process.env.SAPI_IP, 'process.env.SAPI_IP');
     assert.string(process.env.UFDS_IP, 'process.env.UFDS_IP');
     assert.string(process.env.USER_SCRIPT, 'process.env.USER_SCRIPT');
+    assert.string(process.env.DOCKER_IP, 'process.env.DOCKER_IP');
 
     var updatesImgApiClient = new sdcClients.IMGAPI(UPDATES_IMGAPI_OPTS);
     var localImgApiClient = new sdcClients.IMGAPI({
@@ -241,6 +240,12 @@ function setupVolapi() {
         tlsOptions: {
             rejectUnauthorized: false
         }
+    });
+
+    var dockerClient = restify.createStringClient({
+        url: 'https://' + process.env.DOCKER_IP + ':2376',
+        rejectUnauthorized: false,
+        agent: false
     });
 
     var start = Date.now();
@@ -291,7 +296,21 @@ function setupVolapi() {
                 });
         },
 
-        function _ldapBind(ctx, next) {
+        function getHeadnode(ctx, next) {
+            cnapiClient.listServers({
+                headnode: true
+            }, function (err, servers) {
+                if (err) {
+                    next(new Error('cnapi error:' + err));
+                    return;
+                }
+                ctx.headnode = servers[0];
+                next();
+                return;
+            });
+        },
+
+        function bindToLdapServer(ctx, next) {
             ufdsClient.bind('cn=root', 'secret', next);
         },
 
@@ -317,7 +336,7 @@ function setupVolapi() {
                 });
         },
 
-        function getPkg(ctx, next) {
+        function getVolApiPkg(ctx, next) {
             console.log('Getting volapi package...');
 
             var filter = {name: svcData.params.package_name,
@@ -354,7 +373,7 @@ function setupVolapi() {
             });
         },
 
-        function getSvc(ctx, next) {
+        function getVolApiSvc(ctx, next) {
             console.log('Getting existing volapi service...');
 
             sapiClient.listServices({
@@ -368,39 +387,6 @@ function setupVolapi() {
                     ctx.volapiSvc = svcs[0];
                 }
                 next();
-            });
-        },
-
-        function getVolApiInst(ctx, next) {
-            console.log('Getting existing volapi instance...');
-
-            if (!ctx.volapiSvc) {
-                next();
-                return;
-            }
-            var filter = {
-                service_uuid: ctx.volapiSvc.uuid
-            };
-            sapiClient.listInstances(filter, function (err, insts) {
-                if (err) {
-                    next(new Error('sapi error:', err));
-                    return;
-                } else if (insts && insts.length) {
-                    // Note this doesn't handle multiple insts.
-                    ctx.volapiInst = insts[0];
-                    vmapiClient.getVm({
-                        uuid: ctx.volapiInst.uuid
-                    }, function (vmErr, volapiVm) {
-                        if (vmErr) {
-                            next(vmErr);
-                            return;
-                        }
-                        ctx.volapiVm = volapiVm;
-                        next();
-                    });
-                } else {
-                    next();
-                }
             });
         },
 
@@ -422,7 +408,7 @@ function setupVolapi() {
         },
 
         function haveLatestVolApiImageAlready(ctx, next) {
-            console.log('Checking if latest volapi image is already imported...');
+            console.log('Checking if latest volapi image is already imported');
 
             localImgApiClient.getImage(ctx.volapiImg.uuid,
                     function (err, img_) {
@@ -436,16 +422,75 @@ function setupVolapi() {
             });
         },
 
+        function getDockerApiSvc(ctx, next) {
+            console.log('Getting existing docker service...');
+
+            sapiClient.listServices({
+                name: 'docker',
+                application_uuid: ctx.sdcApplicationUuid
+            }, function (svcErr, svcs) {
+                if (svcErr) {
+                    next(svcErr);
+                    return;
+                } else if (svcs.length) {
+                    ctx.dockerSvc = svcs[0];
+                }
+                next();
+            });
+        },
+
+        function getDockerApiInst(ctx, next) {
+            console.log('Getting existing docker instance...');
+
+            if (!ctx.dockerSvc) {
+                next();
+                return;
+            }
+            var filter = {
+                service_uuid: ctx.dockerSvc.uuid
+            };
+            sapiClient.listInstances(filter, function (err, insts) {
+                if (err) {
+                    next(new Error('sapi error:', err));
+                    return;
+                } else if (insts && insts.length) {
+                    // Note this doesn't handle multiple insts.
+                    ctx.dockerInst = insts[0];
+                    vmapiClient.getVm({
+                        uuid: ctx.dockerInst.uuid
+                    }, function (vmErr, dockerVm) {
+                        if (vmErr) {
+                            next(vmErr);
+                            return;
+                        }
+                        ctx.dockerVm = dockerVm;
+                        next();
+                    });
+                } else {
+                    next(new Error('Could not find existing docker instance'));
+                }
+            });
+        },
+
         function getLatestDockerApiImage(ctx, next) {
-            console.log('Getting latest sdc-docker image...');
+            console.log('Getting latest tritonnfs sdc-docker image...');
 
             var filter = {name: 'docker'};
             updatesImgApiClient.listImages(filter, function (err, images) {
+                var tritonNfsImage;
                 if (err) {
                     next(err);
                 } else if (images && images.length) {
-                    // TODO presuming sorted
-                    ctx.dockerImg = images[images.length - 1];
+                    images.forEach(function filterLatestTritonNfsImage(image) {
+                        var imageIsNewer = tritonNfsImage === undefined
+                            || image.version > tritonNfsImage;
+
+                        if (image.version.match('tritonnfs') && imageIsNewer) {
+                            tritonNfsImage = image;
+                        }
+                    });
+
+                    ctx.latestDockerTritonNfsImg = tritonNfsImage;
                     next();
                 } else {
                     next(new Error('no "docker" image found'));
@@ -459,7 +504,7 @@ function setupVolapi() {
             localImgApiClient.getImage(ctx.volapiImg.uuid,
                     function (err, img_) {
                 if (err && err.body && err.body.code === 'ResourceNotFound') {
-                    ctx.imgsToDownload.push(ctx.dockerImg);
+                    ctx.imgsToDownload.push(ctx.latestDockerTritonNfsImg);
                 } else if (err) {
                     next(err);
                     return;
@@ -489,7 +534,7 @@ function setupVolapi() {
             var domain = 'coal.joyent.us';
             var svcDomain = svcData.name + '.' + domain;
 
-            console.log('Creating "volapi" service');
+            console.log('Creating "volapi" service...');
             ctx.didSomething = true;
 
             svcData.params.image_uuid = ctx.volapiImg.uuid;
@@ -505,24 +550,35 @@ function setupVolapi() {
                         return;
                     }
                     ctx.volapiSvc = svc;
-                    LOG.info({svc: svc}, 'created volapi svc');
+                    console.log('"volapi" service created successfully!');
                     next();
                 });
         },
 
-        function getHeadnode(ctx, next) {
-            cnapiClient.listServers({
-                headnode: true
-            }, function (err, servers) {
-                if (err) {
-                    next(new Error('cnapi error:' + err));
-                    return;
-                }
-                ctx.headnode = servers[0];
+        function getVolApiInst(ctx, next) {
+            if (!ctx.volapiSvc) {
                 next();
                 return;
+            }
+
+            var filter = {
+                service_uuid: ctx.volapiSvc.uuid
+            };
+
+            sapiClient.listInstances(filter, function (err, insts) {
+                if (err) {
+                    next(new Error('sapi error:' + err));
+                    return;
+                } else if (insts && insts.length) {
+                    // Note this doesn't handle multiple insts.
+                    ctx.volapiInst = insts[0];
+                    next();
+                } else {
+                    next();
+                }
             });
         },
+
         function createVolApiInst(ctx, next) {
             if (ctx.volapiInst) {
                 next();
@@ -550,6 +606,7 @@ function setupVolapi() {
                 next();
             });
         },
+
         function addSharedVolumesPackages(ctx, next) {
             function createPackageSettings(packageSize) {
                 assert.number(packageSize, 'packageSize');
@@ -592,21 +649,61 @@ function setupVolapi() {
                 next(err);
             });
         },
-        function getDockerServiceUuid(ctx, next) {
-            sapiClient.listServices({
-                name: 'docker',
-                application_uuid: ctx.sdcApplicationUuid
-            }, function (svcErr, svcs) {
-                if (svcErr) {
-                    next(svcErr);
-                    return;
-                } else if (svcs.length) {
-                    ctx.dockerSvc = svcs[0];
-                }
 
-                next();
-            });
+        function getDockerImgInstalledVersion(ctx, next) {
+            vmapiClient.getVm({uuid: ctx.dockerVm.uuid},
+                function onGetVm(err, vm) {
+                    if (vm) {
+                        ctx.dockerInstalledImgUuid = vm.image_uuid;
+                    }
+
+                    next(err);
+                });
         },
+
+        function updateDockerToTritonNfsImage(ctx, next) {
+            if (ctx.dockerInstalledImgUuid !==
+                ctx.latestDockerTritonNfsImg.uuid) {
+                console.log('Updating docker instance to latest tritonnfs '
+                    + 'version...');
+
+                sapiClient.reprovisionInstance(ctx.dockerVm.uuid,
+                    ctx.latestDockerTritonNfsImg.uuid, next);
+            } else {
+                console.log('Docker instance already at latest tritonnfs '
+                    + 'version');
+                next();
+            }
+        },
+
+        function pingDockerService(ctx, next) {
+            var nbRetries = 0;
+            var nbMaxRetries = 10;
+
+            function ping() {
+                ++nbRetries;
+                if (nbRetries > nbMaxRetries) {
+                    next(new Error('Timed out when waiting for docker service '
+                        + 'to come up'));
+                    return;
+                } else {
+                    dockerClient.get('/_ping',
+                        function onPing(err, req, res, data) {
+                            if (data === 'OK') {
+                                console.log('docker service is up!');
+                                next();
+                            } else {
+                                setTimeout(function onRetryTimeout() {
+                                    ping();
+                                }, 2000);
+                            }
+                        });
+                }
+            }
+
+            ping();
+        },
+
         function enableNfSharedVolumes(ctx, next) {
             function _nfsSharedVolumesEnabled(err, didEnable) {
                 if (didEnable) {
@@ -622,6 +719,7 @@ function setupVolapi() {
                 sapiClient: sapiClient
             }, _nfsSharedVolumesEnabled);
         },
+
         function done(ctx, next) {
             if (ctx.didSomething) {
                 console.log('Setup "volapi" (%ds)',
@@ -633,10 +731,6 @@ function setupVolapi() {
             next();
         }
     ]}, function _setupVolapiDone(err) {
-        if (err) {
-            console.error('Error:', err);
-        }
-
         updatesImgApiClient.close();
         localImgApiClient.close();
         cnapiClient.close();
@@ -644,6 +738,11 @@ function setupVolapi() {
         sapiClient.close();
         papiClient.close();
         ufdsClient.destroy();
+
+        if (err) {
+            console.error('Error:', err);
+            process.exit(1);
+        }
     });
 }
 

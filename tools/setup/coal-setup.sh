@@ -20,17 +20,19 @@ set -o pipefail
 TOP=$(cd $(dirname $0)/../../; pwd)
 
 export USER_SCRIPT=$(ssh coal cat /opt/smartdc/sdcadm/etc/setup/user-script)
-export VMAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep vmapi | \
+export VMAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep vmapi0 | \
     tr -s ' ' | cut -d ' ' -f 2)
-export CNAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep cnapi | \
+export CNAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep cnapi0 | \
     tr -s ' ' | cut -d ' ' -f 2)
-export SAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep sapi | \
+export SAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep sapi0 | \
     tr -s ' ' | cut -d ' ' -f 2)
-export PAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep papi | \
+export PAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep papi0 | \
     tr -s ' ' | cut -d ' ' -f 2)
-export IMGAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep imgapi | \
+export IMGAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep imgapi0 | \
     tr -s ' ' | cut -d ' ' -f 2)
-export UFDS_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep ufds | \
+export UFDS_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep ufds0 | \
+    tr -s ' ' | cut -d ' ' -f 2)
+export DOCKER_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep docker0 | \
     tr -s ' ' | cut -d ' ' -f 2)
 
 node ${TOP}/tools/setup/coal-setup.js
