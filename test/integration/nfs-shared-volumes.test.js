@@ -11,6 +11,7 @@
 var child_process = require('child_process');
 var fs = require('fs');
 var path = require('path');
+var util = require('util');
 
 var assert = require('assert-plus');
 var libuuid = require('libuuid');
@@ -22,6 +23,7 @@ var configLoader = require('../../lib/config-loader');
 
 var clientsSetup = require('./lib/clients-setup');
 var resources = require('./lib/resources');
+var testVolumes = require('./lib/volumes');
 
 var CONFIG = configLoader.loadConfigSync();
 
@@ -75,6 +77,11 @@ test('nfs shared volumes', function (tt) {
                 t.ifErr(err, 'volume should have been created successfully');
                 t.equal(volume.name, volumeName, 'volume name should be '
                     + volumeName);
+
+                testVolumes.checkVolumeObjectFormat(volume, {
+                    type: 'tritonnfs',
+                    name: volumeName
+                }, t);
 
                 sharedNfsVolume = volume;
                 t.end();
