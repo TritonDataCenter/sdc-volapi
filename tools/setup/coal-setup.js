@@ -198,6 +198,53 @@ function enableNfsSharedVolumesInDocker(dockerSvcId, options, callback) {
     });
 }
 
+function updateSdcAppMetadata(sdcApplicationUuid, options, callback) {
+    assert.string(sdcApplicationUuid, 'sdcApplicationUuid');
+    assert.object(options, 'options');
+    assert.object(options.sapiClient, 'options.sapiClient');
+    assert.func(callback, 'callback');
+
+    var sapiClient = options.sapiClient;
+
+    vasync.waterfall([
+        function _getSdcMetadata(next) {
+            console.log('Checking sdc metadata...');
+            sapiClient.getApplication(sdcApplicationUuid,
+                function onSdcApp(err, sdcApp) {
+                    var sdcAppMetadata;
+
+                    if (!err && sdcApp) {
+                        sdcAppMetadata = sdcApp.metadata;
+                    }
+
+                    next(err, sdcAppMetadata);
+                });
+        },
+        function _writeSdcMetadata(sdcAppMetadata, next) {
+            if (sdcAppMetadata && sdcAppMetadata.volapi_domain) {
+                console.log('sdc metadata up to date!');
+                next(null, false);
+            } else {
+                console.log('Updating sdc metadata...');
+                sapiClient.updateApplication(sdcApplicationUuid, {
+                    metadata: {
+                        volapi_domain: 'volapi.coal.joyent.us'
+                    }
+                }, function onMetadataUpdated(err) {
+                    if (err) {
+                        console.log('Error when updating metadata:', err);
+                    } else {
+                        console.log('Metadata updated successfully!');
+                    }
+
+                    next(err, true);
+                });
+            }
+        }
+    ], function _updateDone(err, changedMetadata) {
+        callback(err, changedMetadata);
+    });
+}
 function setupVolapi() {
     assert.string(process.env.IMGAPI_IP, 'process.env.IMGAPI_IP');
     assert.string(process.env.CNAPI_IP, 'process.env.CNAPI_IP');
@@ -642,6 +689,18 @@ function setupVolapi() {
                     inst.params.alias);
                 ctx.newVolApiInst = inst;
                 next();
+            });
+        },
+
+        function _updateSdcAppMetadata(ctx, next) {
+            updateSdcAppMetadata(ctx.sdcApplicationUuid, {
+                sapiClient: sapiClient
+            }, function onMetadataUpdated(err, didSomething) {
+                if (didSomething) {
+                    ctx.didSomething = true;
+                }
+
+                next(err);
             });
         },
 
