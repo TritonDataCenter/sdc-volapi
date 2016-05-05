@@ -45,6 +45,8 @@ $ cd sdc-volapi
 $ sh tools/setup/coal-setup.sh
 ```
 
+## Contributing changes
+
 Before commiting/pushing run `make prepush` and, if possible, get a code
 review.
 
