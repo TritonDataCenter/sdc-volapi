@@ -52,7 +52,9 @@ review.
 
 # Testing
 
-    make test
+## Running integration tests in COAL
+
+    make test-integration-in-coal
 
 
 
