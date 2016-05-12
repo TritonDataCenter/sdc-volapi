@@ -45,6 +45,26 @@ $ cd sdc-volapi
 $ sh tools/setup/coal-setup.sh
 ```
 
+Running `tools/setup/coal-setup.sh` goes through all the steps necessary to
+enable support for NFS shared volumes in COAL. It updates other core Triton
+services, such as sdc-docker, to different versions from feature branches that
+include changes needed to support shared volumes management. It also adds
+packages into PAPI and services into SAPI, among other things.
+
+As a result, when enabling this new service in COAL, it is no longer possible to
+update services that play a role in supporting NFS shared volumes as usual. For
+instance, updating the Docker API to the latest development version from the
+master branch would break support for `tritonnfs` volumes.
+
+The feature branches of all the repositories that are used to support the
+Volumes API are regularly rebased on top of the current development (master)
+branch, but not immediately. Thus, running this script is not recommended when
+the ability to use latest development features of Triton is needed at all times.
+
+There is also not automated procedure for uninstalling support for the Volumes
+API, and going back to using the latest development branch (master) for all
+Triton repositories.
+
 ## Contributing changes
 
 Before commiting/pushing run `make prepush` and, if possible, get a code
