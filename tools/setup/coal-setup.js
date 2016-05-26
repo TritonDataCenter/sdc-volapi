@@ -530,7 +530,7 @@ function setupVolapi() {
                 } else if (images && images.length) {
                     images.forEach(function filterLatestTritonNfsImage(image) {
                         var imageIsNewer = tritonNfsImage === undefined ||
-                            image.version > tritonNfsImage;
+                            image.version > tritonNfsImage.version;
 
                         if (image.version.match('tritonnfs') && imageIsNewer) {
                             tritonNfsImage = image;
@@ -546,16 +546,21 @@ function setupVolapi() {
         },
 
         function haveLatestDockerApiImageAlready(ctx, next) {
-            console.log('Checking if latest sdc-docker image is imported...');
+            console.log('Checking if latest tritonnfs sdc-docker image is '
+                + 'imported...');
 
-            localImgApiClient.getImage(ctx.volapiImg.uuid,
+            localImgApiClient.getImage(ctx.latestDockerTritonNfsImg.uuid,
                     function (err, img_) {
                 if (err && err.body && err.body.code === 'ResourceNotFound') {
                     ctx.imgsToDownload.push(ctx.latestDockerTritonNfsImg);
                 } else if (err) {
                     next(err);
                     return;
+                } else {
+                    console.log('Latest tritonnfs sdc-docker image already '
+                        + 'imported');
                 }
+
                 next();
             });
         },

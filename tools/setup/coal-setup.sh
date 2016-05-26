@@ -19,7 +19,9 @@ set -o pipefail
 
 TOP=$(cd $(dirname $0)/../../; pwd)
 
+# Used to set 'user-script' metadata property for the VM running VOLAPI
 export USER_SCRIPT=$(ssh coal cat /opt/smartdc/sdcadm/etc/setup/user-script)
+
 export VMAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep vmapi0 | \
     tr -s ' ' | cut -d ' ' -f 2)
 export CNAPI_IP=$(ssh coal vmadm list -o alias,nics.0.ip | grep cnapi0 | \
