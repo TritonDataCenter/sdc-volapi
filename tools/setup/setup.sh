@@ -19,7 +19,42 @@ set -o pipefail
 
 TOP=$(cd $(dirname $0)/../../; pwd)
 
-ssh root@coal /bin/bash -l << "EOS"
+function fatal
+{
+    echo "$0: fatal error: $*"
+    exit 1
+}
+
+function errexit
+{
+    [[ $1 -ne 0 ]] || exit 0
+    fatal "error exit status $1"
+}
+
+function usage
+{
+    echo "Usage:"
+    echo "setup [ssh-datacenter-name]"
+    echo ""
+    echo "ssh-datacenter-name is a name that can be used to connect via ssh"
+    echo "to the datacenter on which to setup VOLAPI. It defaults to \"coal\"."
+    exit 1
+}
+
+trap 'errexit $?' EXIT
+
+if [ "$#" -gt 1 ]; then
+    usage
+fi
+
+datacenter_name="coal"
+if [ "x$1" != "x" ]; then
+    datacenter_name="$1"
+fi
+
+echo "Setting up VOLAPI in $datacenter_name..."
+
+ssh root@"$datacenter_name" /bin/bash -l << "EOS"
 if [[ -n "$TRACE" ]]; then
     export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: '\
         '${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -34,14 +69,6 @@ function fatal
     echo "$0: fatal error: $*"
     exit 1
 }
-
-function errexit
-{
-    [[ $1 -ne 0 ]] || exit 0
-    fatal "error exit status $1"
-}
-
-trap 'errexit $?' EXIT
 
 # Install platform with dockerinit changes allowing to automatically mount
 # NFS server zones' exported filesystems from Docker containers.
@@ -77,6 +104,11 @@ fi
 echo "Enabling experimental VOLAPI service"
 sdcadm experimental volapi
 
+echo "Restarting sdc-docker to account for configuration changes..."
+/opt/smartdc/bin/sdc-login -l docker svcadm restart config-agent
+/opt/smartdc/bin/sdc-login -l docker svcadm restart docker
+echo "sdc-docker restarted!"
+
 EOS
 
-echo "VOLAPI setup, reboot of all CNs is needed before it can be used"
+echo "VOLAPI setup done, reboot of all CNs is needed before it can be used"

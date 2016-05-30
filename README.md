@@ -39,6 +39,17 @@ containers, infrastructure containers and hardware virtual machines).
 
 ## Getting started
 
+### Requirements
+
+In order to be able to use Docker NFS shared volumes (Docker volumes created
+with the `tritonnfs` driver), a [working sdc-docker installation is
+required](https://github.com/joyent/sdc-docker#installation).
+
+Without installing sdc-docker, it is still possible to use VOLAPI to create and
+use volumes, just not through Docker APIs/clients.
+
+### Installation
+
 ```
 $ git clone git@github.com:joyent/sdc-volapi.git
 $ cd sdc-volapi
