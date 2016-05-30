@@ -42,14 +42,15 @@ containers, infrastructure containers and hardware virtual machines).
 ```
 $ git clone git@github.com:joyent/sdc-volapi.git
 $ cd sdc-volapi
-$ sh tools/setup/coal-setup.sh
+$ sh tools/setup/setup.sh
 ```
 
-Running `tools/setup/coal-setup.sh` goes through all the steps necessary to
-enable support for NFS shared volumes in COAL. It updates other core Triton
-services, such as sdc-docker, to different versions from feature branches that
-include changes needed to support shared volumes management. It also adds
-packages into PAPI and services into SAPI, among other things.
+Running `tools/setup/setup.sh` goes through all the steps necessary to enable
+support for NFS shared volumes in any datacenter (including COAL). It updates
+other core Triton services, such as sdc-docker, to different versions from
+feature branches that include changes needed to support shared volumes
+management. It also adds packages into PAPI and services into SAPI, among other
+things.
 
 As a result, when enabling this new service in COAL, it is no longer possible to
 update services that play a role in supporting NFS shared volumes as usual. For
@@ -64,6 +65,8 @@ the ability to use latest development features of Triton is needed at all times.
 There is also not automated procedure for uninstalling support for the Volumes
 API, and going back to using the latest development branch (master) for all
 Triton repositories.
+
+In other words, __use at your own risk__.
 
 ## Contributing changes
 
