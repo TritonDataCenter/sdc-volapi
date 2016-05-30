@@ -85,7 +85,9 @@ sdcadm_experimental_images=$(/opt/smartdc/bin/updates-imgadm -H \
     -C experimental \
     list name=sdcadm | cut -d ' ' -f 1)
 
-# Find latest sdcadm image with tritonnfs support
+# Find latest sdcadm image with tritonnfs support, we currently assume that the
+# output of updates-imgadm list, stored in sdcadm_experimental_images, is sorted
+# by publishing date.
 latest_sdcadm_tritonnfs_img=
 for SDC_ADM_IMG in ${sdcadm_experimental_images};\
 do
