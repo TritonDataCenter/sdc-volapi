@@ -70,6 +70,40 @@ function fatal
     exit 1
 }
 
+function get_latest_img_uuid
+{
+    local image_name=$1
+    local branch_pattern=$2
+    local images
+    local latest_img
+
+    images=$(/opt/smartdc/bin/updates-imgadm -H -C experimental \
+        list name=$image_name | cut -d ' ' -f 1)
+    # Find latest image with a name that matches $image_name created from a
+    # branch whose name matches $branch_pattern. It is currently assumed that
+    # the output of updates-imgadm list is sorted by publishing date.
+    for IMG in ${images};\
+    do
+        latest_img=$(updates-imgadm -C experimental get "${IMG}" | \
+            json -c "version.indexOf('"${branch_pattern}"') !== -1 || \
+            (tags != null && tags.buildstamp != null && \
+            tags.buildstamp.indexOf('"${branch_pattern}"') !== -1)" uuid)
+    done
+
+    echo "$latest_img"
+}
+
+function get_service_installed_img_uuid
+{
+    local service_name=$1
+    local installed_img_uuid
+
+    installed_img_uuid=$(sdc-sapi /services?name="$service_name" | \
+        json -Ha params.image_uuid)
+
+    echo "$installed_img_uuid"
+}
+
 # Install platform with dockerinit changes allowing to automatically mount
 # NFS server zones' exported filesystems from Docker containers.
 sdcadm platform install -C experimental \
@@ -81,26 +115,38 @@ sdcadm platform assign --all \
     $(updates-imgadm list -H -o version -C experimental name=platform \
         version=~nfsvolumes | tail -1 | cut -d'-' -f2)
 
-sdcadm_experimental_images=$(/opt/smartdc/bin/updates-imgadm -H \
-    -C experimental \
-    list name=sdcadm | cut -d ' ' -f 1)
-
-# Find latest sdcadm image with tritonnfs support, we currently assume that the
-# output of updates-imgadm list, stored in sdcadm_experimental_images, is sorted
-# by publishing date.
-latest_sdcadm_tritonnfs_img=
-for SDC_ADM_IMG in ${sdcadm_experimental_images};\
-do
-    latest_sdcadm_tritonnfs_img=$(updates-imgadm -C experimental get \
-        "${SDC_ADM_IMG}" | \
-        json -c 'tags.buildstamp.indexOf("nfs") !== -1' uuid)
-done
-
+echo "Making sure sdcadm is up to date..."
+sdcadm_installed_version=$(sdcadm --version | cut -d ' ' -f 3 | tr -d '()')
+echo "Current sdcadm version: $sdcadm_installed_version"
+latest_sdcadm_tritonnfs_img=$(get_latest_img_uuid "sdcadm" "tritonnfs")
 if [ "x$latest_sdcadm_tritonnfs_img" != "x" ]; then
-    echo "Updating sdcadm to image ${latest_sdcadm_tritonnfs_img}"
-    sdcadm self-update -C experimental $latest_sdcadm_tritonnfs_img
+    latest_sdcadm_tritonnfs_img_buildstamp=$(updates-imgadm  -C experimental \
+        get "$latest_sdcadm_tritonnfs_img" | json tags.buildstamp)
+    if [ "$latest_sdcadm_tritonnfs_img_buildstamp" != \
+        "$sdcadm_installed_version" ]; then
+        echo "Updating sdcadm to image ${latest_sdcadm_tritonnfs_img}"
+        sdcadm self-update -C experimental "$latest_sdcadm_tritonnfs_img"
+    else
+        echo "sdcadm is up to date on latest tritonnfs version"
+    fi
 else
     fatal "Could not find latest sdcadm version with tritonnfs support"
+fi
+
+echo "Making sure sdc core zone is up to date..."
+current_sdcsdc_tritonnfs_img=$(get_service_installed_img_uuid "sdc")
+echo "Current sdcsdc image: $current_sdcsdc_tritonnfs_img"
+latest_sdcsdc_tritonnfs_img=$(get_latest_img_uuid "sdc" "tritonnfs")
+if [ "x$latest_sdcsdc_tritonnfs_img" != "x" ]; then
+    if [ "$latest_sdcsdc_tritonnfs_img" != \
+        "$current_sdcsdc_tritonnfs_img" ]; then
+        echo "Updating sdcsdc to image ${latest_sdcsdc_tritonnfs_img}"
+        sdcadm up -y -C experimental "sdc@$latest_sdcsdc_tritonnfs_img"
+    else
+        echo "sdcsdc is up to date with latest tritonnfs version"
+    fi
+else
+    fatal "Could not find latest sdcsdc version with tritonnfs support"
 fi
 
 echo "Enabling experimental VOLAPI service"
