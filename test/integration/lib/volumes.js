@@ -36,8 +36,7 @@ function checkVolumeObjectFormat(volume, values, test) {
     test.ok(volume.requested_size === undefined ||
         typeof (volume.requested_size) === 'number',
             'newly created volume has an optional requested size');
-    test.ok(volume.reserved_size,
-        'newly created volume should have a reserved size');
+    test.ok(volume.size, 'newly created volume should have a size');
 }
 
 module.exports = {

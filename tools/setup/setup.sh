@@ -149,6 +149,22 @@ else
     fatal "Could not find latest sdcsdc version with tritonnfs support"
 fi
 
+echo "Making sure workflow core zone is up to date..."
+current_workflow_tritonnfs_img=$(get_service_installed_img_uuid "workflow")
+echo "Current workflow image: $current_workflow_tritonnfs_img"
+latest_workflow_tritonnfs_img=$(get_latest_img_uuid "workflow" "tritonnfs")
+if [ "x$latest_workflow_tritonnfs_img" != "x" ]; then
+    if [ "$latest_workflow_tritonnfs_img" != \
+        "$current_workflow_tritonnfs_img" ]; then
+        echo "Updating workflow to image ${latest_workflow_tritonnfs_img}"
+        sdcadm up -y -C experimental "workflow@$latest_workflow_tritonnfs_img"
+    else
+        echo "workflow is up to date with latest tritonnfs version"
+    fi
+else
+    fatal "Could not find latest workflow version with tritonnfs support"
+fi
+
 echo "Enabling experimental VOLAPI service"
 sdcadm experimental volapi
 
