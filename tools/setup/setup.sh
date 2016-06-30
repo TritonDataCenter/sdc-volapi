@@ -9,6 +9,11 @@
 # Copyright (c) 2016, Joyent, Inc.
 #
 
+# This is the first platform build that integrates the fix for DOCKER-754 that
+# brings supports for mounting NFS volumes with dockerinit when Docker zones
+# boot.
+MINIMUM_SUPPORTED_PLATFORM_VERSION="20160613T123039Z"
+
 if [[ -n "$TRACE" ]]; then
     export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: '\
         '${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -41,6 +46,102 @@ function usage
     exit 1
 }
 
+function cns_need_platform_upgrade
+{
+    local datacenter_name=$1
+    local cns_platform_versions=$(ssh $datacenter_name \
+        "/opt/smartdc/bin/sdc-oneachnode -j -N -c 'uname -v'" | \
+        json -a result.stdout | \
+        cut -d '_' -f 2)
+
+    for CN_PLATFORM_VERSION in $cns_platform_versions; do
+        if [[ "$CN_PLATFORM_VERSION" < \
+            "$MINIMUM_SUPPORTED_PLATFORM_VERSION" ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+function coal_needs_platform_upgrade
+{
+    local coal_headnode_platform_version=$(ssh $datacenter_name uname -v | \
+        cut -d '_' -f 2)
+
+    if [[ "$coal_headnode_platform_version" < \
+            "$MINIMUM_SUPPORTED_PLATFORM_VERSION" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function upgrade_platform_to_latest_master
+{
+    local datacenter_name=$1
+    local latest_master_platform_uuid_and_version
+    local latest_master_platform_uuid
+    local latest_master_platform_version
+
+    echo "Upgrading platform to latest master on all CNs..."
+
+    latest_master_platform_uuid_and_version=$(ssh $datacenter_name \
+        /opt/smartdc/bin/updates-imgadm list -H -o uuid,version name=platform \
+        version=~master | tail -1)
+    latest_master_platform_uuid=$(echo $latest_master_platform_uuid_and_version\
+        | cut -d ' ' -f 1)
+    latest_master_platform_version=$(echo $latest_master_platform_uuid_and_version\
+        | cut -d ' ' -f 2 | cut -d '-' -f 2)
+
+    echo "Installing latest master platform..."
+    ssh $datacenter_name /opt/smartdc/bin/sdcadm platform install \
+        "$latest_master_platform_uuid"
+
+    echo "Assigning latest master platform to all CNs..."
+    ssh $datacenter_name /opt/smartdc/bin/sdcadm platform assign --all \
+        $latest_master_platform_version
+
+    echo "Platform upgrade done, please reboot all CNs in order for " \
+        "them to boot with the new installed platform."
+}
+
+function check_platform_supports_nfs_volumes
+{
+    local datacenter_name=$1
+    local proceed_with_upgrade=""
+    local need_platform_upgrade=0
+
+    if [[ "$datacenter_name" == "coal" ]]; then
+        if coal_needs_platform_upgrade; then
+            need_platform_upgrade=1
+        fi
+    elif cns_need_platform_upgrade "$datacenter_name"; then
+        need_platform_upgrade=1
+    fi
+
+    if [[ $need_platform_upgrade -eq 1 ]]; then
+        echo "Current installed platform is older than minimum supported" \
+            "platform on at least 1 CN."
+        printf "Do you want to upgrade to latest master platform on all CNs" \
+            "[y/N]"
+
+        read proceed_with_upgrade
+        echo ""
+
+        if [[ "$proceed_with_upgrade" == "y" || \
+            "$proceed_with_upgrade" == "Y" ]]; then
+            upgrade_platform_to_latest_master "$datacenter_name"
+        else
+            echo "A platform that supports NFS volumes is needed to use "\
+                "VOLAPI, exiting."
+            exit 0
+        fi
+    else
+        echo "Current installed platform supports NFS volumes, not upgrading."
+    fi
+}
+
 trap 'errexit $?' EXIT
 
 if [ "$#" -gt 1 ]; then
@@ -54,7 +155,9 @@ fi
 
 echo "Setting up VOLAPI in $datacenter_name..."
 
-ssh root@"$datacenter_name" /bin/bash -l << "EOS"
+check_platform_supports_nfs_volumes "$datacenter_name"
+
+ssh root@"$datacenter_name" TRACE="$TRACE" /bin/bash -l << "EOS"
 if [[ -n "$TRACE" ]]; then
     export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: '\
         '${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -132,17 +235,6 @@ function upgrade_core_service_to_latest_branch_image
             "branch $branch_name"
     fi
 }
-
-# Install platform with dockerinit changes allowing to automatically mount
-# NFS server zones' exported filesystems from Docker containers.
-sdcadm platform install -C experimental \
-    $(updates-imgadm list -H -o uuid -C experimental name=platform \
-        version=~nfsvolumes | tail -1)
-
-# Assign that platform to all CNs
-sdcadm platform assign --all \
-    $(updates-imgadm list -H -o version -C experimental name=platform \
-        version=~nfsvolumes | tail -1 | cut -d'-' -f2)
 
 echo "Making sure sdcadm is up to date..."
 sdcadm_installed_version=$(sdcadm --version | cut -d ' ' -f 3 | tr -d '()')
