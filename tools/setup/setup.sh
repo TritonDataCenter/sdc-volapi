@@ -104,6 +104,35 @@ function get_service_installed_img_uuid
     echo "$installed_img_uuid"
 }
 
+function upgrade_core_service_to_latest_branch_image
+{
+    local core_service_name=$1
+    local branch_name=$2
+
+    local installed_img_uuid
+    local latest_img_uuid
+
+    echo "Making sure $core_service_name core zone is up to date..."
+
+    installed_img_uuid=$(get_service_installed_img_uuid "$core_service_name")
+    echo "Current installed $core_service_name image:"\
+        "$installed_img_uuid"
+
+    latest_img_uuid=$(get_latest_img_uuid "$core_service_name" "$branch_name")
+    if [ "x$latest_img_uuid" != "x" ]; then
+        if [ "$latest_img_uuid" != "$installed_img_uuid" ]; then
+            echo "Updating $core_service_name to image ${latest_img_uuid}"
+            sdcadm up -y -C experimental "$core_service_name@$latest_img_uuid"
+        else
+            echo "$core_service_name is up to date with latest $branch_name"\
+                "version"
+        fi
+    else
+        fatal "Could not find latest $core_service_name version built from"\
+            "branch $branch_name"
+    fi
+}
+
 # Install platform with dockerinit changes allowing to automatically mount
 # NFS server zones' exported filesystems from Docker containers.
 sdcadm platform install -C experimental \
@@ -133,37 +162,10 @@ else
     fatal "Could not find latest sdcadm version with tritonnfs support"
 fi
 
-echo "Making sure sdc core zone is up to date..."
-current_sdcsdc_tritonnfs_img=$(get_service_installed_img_uuid "sdc")
-echo "Current sdcsdc image: $current_sdcsdc_tritonnfs_img"
-latest_sdcsdc_tritonnfs_img=$(get_latest_img_uuid "sdc" "tritonnfs")
-if [ "x$latest_sdcsdc_tritonnfs_img" != "x" ]; then
-    if [ "$latest_sdcsdc_tritonnfs_img" != \
-        "$current_sdcsdc_tritonnfs_img" ]; then
-        echo "Updating sdcsdc to image ${latest_sdcsdc_tritonnfs_img}"
-        sdcadm up -y -C experimental "sdc@$latest_sdcsdc_tritonnfs_img"
-    else
-        echo "sdcsdc is up to date with latest tritonnfs version"
-    fi
-else
-    fatal "Could not find latest sdcsdc version with tritonnfs support"
-fi
-
-echo "Making sure workflow core zone is up to date..."
-current_workflow_tritonnfs_img=$(get_service_installed_img_uuid "workflow")
-echo "Current workflow image: $current_workflow_tritonnfs_img"
-latest_workflow_tritonnfs_img=$(get_latest_img_uuid "workflow" "tritonnfs")
-if [ "x$latest_workflow_tritonnfs_img" != "x" ]; then
-    if [ "$latest_workflow_tritonnfs_img" != \
-        "$current_workflow_tritonnfs_img" ]; then
-        echo "Updating workflow to image ${latest_workflow_tritonnfs_img}"
-        sdcadm up -y -C experimental "workflow@$latest_workflow_tritonnfs_img"
-    else
-        echo "workflow is up to date with latest tritonnfs version"
-    fi
-else
-    fatal "Could not find latest workflow version with tritonnfs support"
-fi
+upgrade_core_service_to_latest_branch_image "sdc" "tritonnfs"
+upgrade_core_service_to_latest_branch_image "workflow" "tritonnfs"
+upgrade_core_service_to_latest_branch_image "vmapi" "tritonnfs"
+upgrade_core_service_to_latest_branch_image "docker" "tritonnfs"
 
 echo "Enabling experimental VOLAPI service"
 sdcadm experimental volapi
