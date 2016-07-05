@@ -178,7 +178,8 @@ function get_latest_img_uuid
     local image_name=$1
     local branch_pattern=$2
     local images
-    local latest_img
+    local branch_img_uuid
+    local latest_branch_img_uuid
 
     images=$(/opt/smartdc/bin/updates-imgadm -H -C experimental \
         list name=$image_name | cut -d ' ' -f 1)
@@ -187,13 +188,17 @@ function get_latest_img_uuid
     # the output of updates-imgadm list is sorted by publishing date.
     for IMG in ${images};\
     do
-        latest_img=$(updates-imgadm -C experimental get "${IMG}" | \
-            json -c "version.indexOf('"${branch_pattern}"') !== -1 || \
+        branch_img_uuid=$(updates-imgadm -C experimental get "${IMG}" | \
+            json -c "(version != null && \
+            version.indexOf('"${branch_pattern}"') !== -1) || \
             (tags != null && tags.buildstamp != null && \
             tags.buildstamp.indexOf('"${branch_pattern}"') !== -1)" uuid)
+        if [[ "$branch_img_uuid" != "" ]]; then
+            latest_branch_img_uuid=$branch_img_uuid
+        fi
     done
 
-    echo "$latest_img"
+    echo "$latest_branch_img_uuid"
 }
 
 function get_service_installed_img_uuid
@@ -254,13 +259,23 @@ else
     fatal "Could not find latest sdcadm version with tritonnfs support"
 fi
 
+echo "Enabling experimental VOLAPI service"
+sdcadm experimental volapi
+
 upgrade_core_service_to_latest_branch_image "sdc" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "workflow" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "vmapi" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "docker" "tritonnfs"
+# The VOLAPI service may have been already enabled by "sdcadm experimental
+# volapi" but the VOLAPI zone may need to be updated to the latest version.
+upgrade_core_service_to_latest_branch_image "volapi" "tritonnfs"
 
-echo "Enabling experimental VOLAPI service"
-sdcadm experimental volapi
+echo "Running other experimental migration processes"
+# "sdcadm experimental update-other" takes care of doing things such as adding a
+# VOLAPI_SERVICE key in the sdc's SAPI application metadata, running VMAPI
+# migrations, etc., which are not done by "sdcadm experimental volapi", so this
+# needs to be run every time to make sure everything is up to date.
+sdcadm experimental update-other
 
 echo "Restarting sdc-docker to account for configuration changes..."
 /opt/smartdc/bin/sdc-login -l docker svcadm restart config-agent
