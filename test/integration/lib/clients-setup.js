@@ -34,7 +34,7 @@ function getApiClients(callback) {
         }
     });
 
-    var volapiClient = new restify.createJsonClient({
+    var volapiClient = new VOLAPI({
         url: VOLAPI_URL,
         version: '*',
         log: logger,

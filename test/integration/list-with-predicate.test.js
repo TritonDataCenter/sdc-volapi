@@ -116,15 +116,13 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
                 eq: ['invalid-pred', 'foo']
             };
 
-            var queryString = '/volumes' + '?' + 'predicate='
-                + encodeURIComponent(JSON.stringify(predicate));
-
-            API_CLIENTS.volapi.get(queryString,
-                function onListVolumes(err, req, res, obj) {
-                    t.ok(err,
-                        'listing volumes with invalid predicate should error');
-                    t.end();
-                });
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, req, res, obj) {
+                t.ok(err,
+                    'listing volumes with invalid predicate should error');
+                t.end();
+            });
         });
 
     tt.test('using invalid state value in predicate should error',
@@ -133,15 +131,13 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
                 eq: ['state', 'invalid-state']
             };
 
-            var queryString = '/volumes' + '?' + 'predicate='
-                + encodeURIComponent(JSON.stringify(predicate));
-
-            API_CLIENTS.volapi.get(queryString,
-                function onListVolumes(err, req, res, obj) {
-                    t.ok(err,
-                        'listing volumes with invalid predicate should error');
-                    t.end();
-                });
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, req, res, obj) {
+                t.ok(err,
+                    'listing volumes with invalid predicate should error');
+                t.end();
+            });
         });
 
     tt.test('using invalid type value in predicate should error',
@@ -150,15 +146,13 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
                 eq: ['type', 'invalid-type']
             };
 
-            var queryString = '/volumes' + '?' + 'predicate='
-                + encodeURIComponent(JSON.stringify(predicate));
-
-            API_CLIENTS.volapi.get(queryString,
-                function onListVolumes(err, req, res, obj) {
-                    t.ok(err,
-                        'listing volumes with invalid predicate should error');
-                    t.end();
-                });
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, req, res, obj) {
+                t.ok(err,
+                    'listing volumes with invalid predicate should error');
+                t.end();
+            });
         });
 
     tt.test('using invalid name value in predicate should error',
@@ -167,15 +161,13 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
                 eq: ['name', '/invalid/name']
             };
 
-            var queryString = '/volumes' + '?' + 'predicate='
-                + encodeURIComponent(JSON.stringify(predicate));
-
-            API_CLIENTS.volapi.get(queryString,
-                function onListVolumes(err, req, res, obj) {
-                    t.ok(err,
-                        'listing volumes with invalid predicate should error');
-                    t.end();
-                });
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, req, res, obj) {
+                t.ok(err,
+                    'listing volumes with invalid predicate should error');
+                t.end();
+            });
         });
 });
 
@@ -228,18 +220,18 @@ test('listing nfs shared volumes with an empty predicate', function (tt) {
                     },
                     function getAllVolumesWithEmptyPredicate(callback) {
                         var predicate = {};
-                        var queryString = '/volumes' + '?' + 'predicate='
-                            + encodeURIComponent(JSON.stringify(predicate));
-                        API_CLIENTS.volapi.get(queryString,
-                            function onListVolumes(err, req, res, obj) {
-                                t.ifErr(err,
-                                    'listing volumes with a name predicate '
-                                        + 'should not error');
-                                t.ok(Array.isArray(obj),
-                                    'response body should be an array');
-                                volumesListedWithEmptyPredicate = obj;
-                                callback();
-                            });
+
+                        API_CLIENTS.volapi.listVolumes({
+                            predicate: JSON.stringify(predicate)
+                        }, function onListVolumes(err, volumes) {
+                            t.ifErr(err,
+                                'listing volumes with a name predicate '
+                                    + 'should not error');
+                            t.ok(Array.isArray(volumes),
+                                'response body should be an array');
+                            volumesListedWithEmptyPredicate = volumes;
+                            callback();
+                        });
                     }
                 ]
             }, function allListingDone(err) {
@@ -301,23 +293,23 @@ test('listing nfs shared volumes with a simple name predicate', function (tt) {
             var predicate = {
                 eq: ['name', snowflakeName]
             };
-            var queryString = '/volumes' + '?' + 'predicate='
-                + encodeURIComponent(JSON.stringify(predicate));
-            API_CLIENTS.volapi.get(queryString,
-                function onListVolumes(err, req, res, obj) {
-                    t.ifErr(err,
-                        'listing volumes with a name predicate should not '
-                            + 'error');
-                    t.ok(Array.isArray(obj),
-                        'response body should be an array');
-                    t.equal(obj.length, 1,
-                        'only one volume should be included in the response '
-                            + 'body');
-                    t.equal(obj[0].name, snowflakeName,
-                        'the name of the volume returned in the response '
-                            + 'should be: ' + snowflakeName);
-                    t.end();
-                });
+
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, volumes) {
+                t.ifErr(err,
+                    'listing volumes with a name predicate should not '
+                        + 'error');
+                t.ok(Array.isArray(volumes),
+                    'response body should be an array');
+                t.equal(volumes.length, 1,
+                    'only one volume should be included in the response '
+                        + 'body');
+                t.equal(volumes[0].name, snowflakeName,
+                    'the name of the volume returned in the response '
+                        + 'should be: ' + snowflakeName);
+                t.end();
+            });
         });
 
     tt.test('removing test volume objects should succeed', function (t) {
@@ -385,26 +377,26 @@ test('listing volumes with a composed state/name predicate', function (tt) {
                     }
                 ]
             };
-            var queryString = '/volumes' + '?' + 'predicate='
-                + encodeURIComponent(JSON.stringify(predicate));
-            API_CLIENTS.volapi.get(queryString,
-                function onListVolumes(err, req, res, obj) {
-                    t.ifErr(err,
-                        'listing volumes with a name predicate should not '
-                            + 'error');
-                    t.ok(Array.isArray(obj),
-                        'response body should be an array');
-                    t.equal(obj.length, 2,
-                        'only two volumes should be included in the response '
-                            + 'body');
-                    t.equal(obj[0].state, 'creating',
-                        'the state of the first volume returned in the '
-                            + 'response should be: creating');
-                    t.equal(obj[1].state, 'creating',
-                        'the state of the first volume returned in the '
-                            + 'response should be: creating');
-                    t.end();
-                });
+
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, volumes) {
+                t.ifErr(err,
+                    'listing volumes with a name predicate should not '
+                        + 'error');
+                t.ok(Array.isArray(volumes),
+                    'response body should be an array');
+                t.equal(volumes.length, 2,
+                    'only two volumes should be included in the response '
+                        + 'body');
+                t.equal(volumes[0].state, 'creating',
+                    'the state of the first volume returned in the '
+                        + 'response should be: creating');
+                t.equal(volumes[1].state, 'creating',
+                    'the state of the first volume returned in the '
+                        + 'response should be: creating');
+                t.end();
+            });
         });
 
     tt.test('removing test volume objects should succeed', function (t) {
