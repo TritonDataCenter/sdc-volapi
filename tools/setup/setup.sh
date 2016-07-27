@@ -277,6 +277,9 @@ echo "Running other experimental migration processes"
 # needs to be run every time to make sure everything is up to date.
 sdcadm experimental update-other
 
+# Needed to add additional programs in the HN's GZ, such as sdc-volapi
+sdcadm experimental update-gz-tools -C experimental --latest
+
 echo "Restarting sdc-docker to account for configuration changes..."
 /opt/smartdc/bin/sdc-login -l docker svcadm restart config-agent
 /opt/smartdc/bin/sdc-login -l docker svcadm restart docker
