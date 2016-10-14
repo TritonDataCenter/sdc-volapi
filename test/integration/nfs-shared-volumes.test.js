@@ -72,7 +72,7 @@ test('nfs shared volumes', function (tt) {
             networks: [NETWORKS[0].uuid]
         };
 
-        CLIENTS.volapi.createVolume(volumeParams,
+        CLIENTS.volapi.createVolumeAndWait(volumeParams,
             function onVolumeCreated(err, volume) {
                 t.ifErr(err, 'volume should have been created successfully');
                 t.equal(volume.name, volumeName, 'volume name should be '
@@ -159,7 +159,7 @@ test('nfs shared volumes', function (tt) {
     tt.test('cleanup', function (t) {
         vasync.parallel({funcs: [
             function deleteSharedVolume(done) {
-                CLIENTS.volapi.deleteVolume({
+                CLIENTS.volapi.deleteVolumeAndWait({
                     uuid: sharedNfsVolume.uuid,
                     owner_uuid: UFDS_ADMIN_UUID
                 }, function onVolumeDeleted(err) {

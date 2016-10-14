@@ -36,7 +36,8 @@ function getApiClients(callback) {
 
     var volapiClient = new VOLAPI({
         url: VOLAPI_URL,
-        version: '*',
+        version: '^1',
+        userAgent: 'sdc-volapi-integration-tests',
         log: logger,
         agent: false
     });
