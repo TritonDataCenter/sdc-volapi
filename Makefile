@@ -24,7 +24,7 @@ JSL_FILES_NODE	 = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
 JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
 SERVICE_NAME     = volapi
-SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME).xml.in
+SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME).xml.in smf/manifests/$(SERVICE_NAME)-updater.xml.in
 
 NODE_PREBUILT_VERSION=v0.10.40
 
@@ -66,6 +66,7 @@ release: all deps docs $(SMF_MANIFESTS)
 	cp -PR $(NODE_INSTALL) $(RELSTAGEDIR)/root/opt/smartdc/$(SERVICE_NAME)/build/node
 	cp -r $(ROOT)/lib \
     $(ROOT)/server.js \
+    $(ROOT)/volapi-updater.js \
     $(ROOT)/Makefile \
     $(ROOT)/node_modules \
     $(ROOT)/package.json \
