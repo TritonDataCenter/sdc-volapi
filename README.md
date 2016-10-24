@@ -50,11 +50,30 @@ use volumes, just not through Docker APIs/clients.
 
 ### Installation
 
-```
-$ git clone git@github.com:joyent/sdc-volapi.git
-$ cd sdc-volapi
-$ sh tools/setup/setup.sh
-```
+1. Checkout VOLAPI's source code:
+
+  ```
+  $ git clone git@github.com:joyent/sdc-volapi.git
+  $ cd sdc-volapi
+  ```
+
+2. Install and enable the VOLAPI service:
+
+  ```
+  $ sh tools/setup/setup.sh $DC_NAME
+  ```
+
+  where `$DC_NAME` is the name of the datacenter in which the VOLAPI service
+  should be installed. By default, the installation process will use `coal` as
+  the datacenter name.
+
+3. Import the `nfsserver` image:
+
+  ```
+  ssh coal "/opt/smartdc/bin/sdc-imgadm import \$(/opt/smartdc/bin/updates-imgadm list -H -o uuid -C dev name=nfsserver | tail -1) -S https://updates.joyent.com/"
+  ```
+
+#### Disclaimer
 
 Running `tools/setup/setup.sh` goes through all the steps necessary to enable
 support for NFS shared volumes in any datacenter (including COAL). It updates
