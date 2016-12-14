@@ -26,11 +26,12 @@ JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
 SERVICE_NAME     = volapi
 SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME).xml.in smf/manifests/$(SERVICE_NAME)-updater.xml.in
 
-NODE_PREBUILT_VERSION=v0.10.40
+NODE_PREBUILT_VERSION=v4.6.1
 
 ifeq ($(shell uname -s),SunOS)
-	NODE_PREBUILT_CC_VERSION=4.6.2
 	NODE_PREBUILT_TAG=zone
+	# Allow building on other than image sdc-minimal-multiarch-lts@15.4.1.
+	NODE_PREBUILT_IMAGE=18b094b0-eb01-11e5-80c1-175dac7ddf02
 endif
 
 include ./tools/mk/Makefile.defs
