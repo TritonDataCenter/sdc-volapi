@@ -2,6 +2,7 @@
     "logLevel": "debug",
     "maxSockets": 100,
     "ufdsAdminUuid": "{{{ufds_admin_uuid}}}",
+    "nfsServerImageUuid": "9fb86870-1941-11e6-8002-4f231c890ed1",
     "api": {
         "port": 80
     },

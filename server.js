@@ -21,8 +21,13 @@ var log = new Logger({
     serializers: restify.bunyan.serializers
 });
 
-volapi.init(config, log, function onVolApiInitialized(err, server) {
-     server.listen(config.api.port || 80, '0.0.0.0', function onListen() {
-         log.info({url: server.url}, '%s listening', server.name);
-     });
+volapi.init(config, log, function onVolApiInitialized(initErr, server) {
+    if (initErr) {
+        log.error({err: initErr}, 'Failed to initialize VOLAPI');
+        process.exitCode = 1;
+    } else {
+        server.listen(config.api.port || 80, '0.0.0.0', function onListen() {
+            log.info({url: server.url}, '%s listening', server.name);
+        });
+    }
 });

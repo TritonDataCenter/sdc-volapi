@@ -67,12 +67,6 @@ use volumes, just not through Docker APIs/clients.
   should be installed. By default, the installation process will use `coal` as
   the datacenter name.
 
-3. Import the `nfsserver` image:
-
-  ```
-  ssh coal "/opt/smartdc/bin/sdc-imgadm import \$(/opt/smartdc/bin/updates-imgadm list -H -o uuid -C dev name=nfsserver | tail -1) -S https://updates.joyent.com/"
-  ```
-
 #### Disclaimer
 
 Running `tools/setup/setup.sh` goes through all the steps necessary to enable
