@@ -26,7 +26,11 @@
 	<service_fmri value="svc:/system/filesystem/local" />
 </dependency>
 
-<exec_method type="method" name="start" exec="@@NODE@@ @@PREFIX@@/volapi-updater.js &amp;" timeout_seconds="30" />
+<exec_method
+    type="method"
+    name="start"
+    exec="@@NODE@@ --abort_on_uncaught_exception @@PREFIX@@/volapi-updater.js &amp;"
+    timeout_seconds="30" />
 <exec_method type="method" name="stop" exec=":kill" timeout_seconds="30" />
 
 <instance name="default" enabled="true" />
