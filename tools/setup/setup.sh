@@ -241,6 +241,22 @@ function upgrade_core_service_to_latest_branch_image
     fi
 }
 
+function upgrade_gz_tools_to_latest_branch_image
+{
+    local branch_name=$1
+
+    local latest_img_uuid
+
+    latest_img_uuid=$(get_latest_img_uuid gz-tools "$branch_name")
+    if [ "x$latest_img_uuid" != "x" ]; then
+        echo "Updating gz-tools to image ${latest_img_uuid}"
+        sdcadm experimental update-gz-tools -C experimental "$latest_img_uuid"
+    else
+        fatal "Could not find latest gz-tools version built from"\
+            "branch $branch_name"
+    fi
+}
+
 echo "Making sure sdcadm is up to date..."
 sdcadm_installed_version=$(sdcadm --version | cut -d ' ' -f 3 | tr -d '()')
 echo "Current sdcadm version: $sdcadm_installed_version"
@@ -278,7 +294,7 @@ echo "Running other experimental migration processes"
 sdcadm experimental update-other
 
 # Needed to add additional programs in the HN's GZ, such as sdc-volapi
-sdcadm experimental update-gz-tools -C experimental --latest
+upgrade_gz_tools_to_latest_branch_image tritonnfs
 
 echo "Restarting sdc-docker to account for configuration changes..."
 /opt/smartdc/bin/sdc-login -l docker svcadm restart config-agent
