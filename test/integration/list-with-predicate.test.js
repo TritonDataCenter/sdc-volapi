@@ -57,7 +57,7 @@ function deleteAllTestVolumeObjects(callback) {
                 func: deleteTestVolumeObject,
                 inputs: volumes.map(function getVolumeUuid(volume) {
                     assert.object(volume, 'volume');
-                    return volume.uuid;
+                    return volume.value.uuid;
                 })
             }, function allVolumesDeleted(deleteErr) {
                 callback(deleteErr);

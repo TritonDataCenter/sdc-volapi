@@ -144,8 +144,8 @@ test('nfs shared volumes', function (tt) {
             CLIENTS.volapi.listVolumes(function onVolumesListed(err, volumes) {
                 var newlyCreatedVolumeFound = false;
 
-                function isNewlyCreatedVolume(volume) {
-                    return volume.uuid = sharedNfsVolume.uuid;
+                function isNewlyCreatedVolume(volumeObject) {
+                    return volumeObject.uuid = sharedNfsVolume.uuid;
                 }
 
                 t.ifErr(err, 'listVolumes should not error');

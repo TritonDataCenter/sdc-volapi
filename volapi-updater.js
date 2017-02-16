@@ -20,7 +20,7 @@ var VmapiClient = require('sdc-clients').VMAPI;
 
 var configLoader = require('./lib/config-loader');
 var mod_volumeUtils = require('./lib/volumes.js');
-var models = require('./lib/models/volumes.js');
+var volumeModels = require('./lib/models/volumes.js');
 var Moray = require('./lib/moray.js');
 
 function VmsUpdater(options) {
@@ -41,6 +41,9 @@ function VmsUpdater(options) {
     mod_assert.string(options.changefeedPublisherUrl,
         'options.changefeedPublisherUrl');
     this._changefeedPublisherUrl = options.changefeedPublisherUrl;
+
+    this._vmChangeEventsQueue =
+        mod_vasync.queue(this._processVmChangeEvent.bind(this), 1);
 }
 
 function getInstanceUuid(callback) {
@@ -137,7 +140,7 @@ function updateVolumeStateFromStorageVm(volume, storageVm) {
     }
 }
 
-function updateVolumeNetworkFromStorageVm(volume, storageVm) {
+function updateVolumeNfsPathFromStorageVm(volume, storageVm) {
     mod_assert.object(volume, 'volume');
     mod_assert.object(storageVm, 'storageVm');
 
@@ -153,14 +156,40 @@ function updateVolumeNetworkFromStorageVm(volume, storageVm) {
     }
 }
 
-function updateVolumeFromStorageVm(volume, storageVm, callback) {
-    mod_assert.object(volume, 'volume');
+function updateVolumeFromStorageVm(volumeObject, storageVm, callback) {
+    mod_assert.object(volumeObject, 'volumeObject');
     mod_assert.object(storageVm, 'storageVm');
+    mod_assert.func(callback, 'callback');
 
-    updateVolumeStateFromStorageVm(volume, storageVm);
-    updateVolumeNetworkFromStorageVm(volume, storageVm);
+    updateVolumeStateFromStorageVm(volumeObject.value, storageVm);
+    updateVolumeNfsPathFromStorageVm(volumeObject.value, storageVm);
 
-    models.updateVolume(volume.uuid, volume, callback);
+    function updateVolume() {
+        volumeModels.updateVolumeWithRetry(volumeObject.value.uuid,
+            volumeObject,
+            function onVolUpdated(volUpdateErr) {
+                if (volUpdateErr && volUpdateErr.name === 'EtagConflictError') {
+                    volumeModels.loadVolume(volumeObject.value.uuid,
+                        function onReloaded(loadVolErr, reloadedVolumeObject) {
+                            if (loadVolErr) {
+                                callback(loadVolErr);
+                                return;
+                            }
+
+                            setTimeout(function retryUpdateVolume() {
+                                updateVolumeFromStorageVm(reloadedVolumeObject,
+                                    storageVm, callback);
+                            }, 2000);
+                            return;
+                        });
+                } else {
+                    callback(volUpdateErr);
+                    return;
+                }
+            });
+    }
+
+    updateVolume();
 }
 
 function updateVolumeFromVm(vm, log, callback) {
@@ -175,20 +204,17 @@ function updateVolumeFromVm(vm, log, callback) {
 
     mod_vasync.pipeline({funcs: [
         function getVolumeForVm(ctx, next) {
-            models.listVolumes({
+            volumeModels.listVolumes({
                 vm_uuid: vmUuid
             }, function onListVolumes(err, volumes) {
                 mod_assert.optionalArrayOfObject(volumes, 'volumes');
 
-                if (volumes) {
-                    log.debug({
-                        volumes: volumes
-                    }, 'VM is used as volume storage');
+                if (volumes && volumes.length > 0) {
+                    log.debug({volumes: volumes},
+                        'VM is used as volume storage');
 
                     mod_assert.ok(volumes.length <= 1);
-                    if (volumes.length > 0) {
-                        ctx.volume = volumes[0];
-                    }
+                    ctx.volume = volumes[0];
                 } else {
                     log.debug('VM is not used as volume storage');
                 }
@@ -228,7 +254,7 @@ function updateVolumeFromVmChangeEvent(vmChangeEvent, log, vmapiClient,
         function checkVmIsForVolumeStorage(ctx, next) {
             log.debug('Checking if VM is used for volume storage...');
 
-            models.listVolumes({
+            volumeModels.listVolumes({
                 vm_uuid: vmUuid
             }, function onListVolumes(err, volumes) {
                 mod_assert.optionalArrayOfObject(volumes, 'volumes');
@@ -320,6 +346,7 @@ function updateAllVolumesFromVmApi(vmapiClient, log, callback) {
     mod_assert.func(callback, 'callback');
 
     log.info('Updating all volumes from VMAPI...');
+
     vmapiClient.listVms({
         /*
          * We should list VMs using an indexed property that indicates that a
@@ -364,27 +391,45 @@ VmsUpdater.prototype.start = function start() {
                     } else {
                         self._log.info('All volumes updated successfully on ' +
                             'bootstrap');
-                    }
-                });
-        });
-
-    self._changefeedListener.on('data',
-        function _updateVolumeFromVmChangeEvent(vmChangeEvent) {
-            updateVolumeFromVmChangeEvent(vmChangeEvent, self._log,
-                self._vmapiClient, function onVmChangeEventHandled(err) {
-                    if (err) {
-                        self._log.error({
-                            error: err,
-                            event: vmChangeEvent
-                        }, 'Error when handling changefeed event');
-                    } else {
-                        self._log.debug({
-                            event: vmChangeEvent
-                        }, 'Changefeed event handled successfully');
+                        self._startProcessingChangefeedEvents();
                     }
                 });
         });
 };
+
+VmsUpdater.prototype._processVmChangeEvent =
+    function _processVmChangeEvent(vmChangeEvent, callback) {
+        var self = this;
+
+        self._log.info({vmChangeEvent: vmChangeEvent},
+            'Process VM change event...');
+
+        updateVolumeFromVmChangeEvent(vmChangeEvent, self._log,
+            self._vmapiClient, function onVmChangeEventHandled(err) {
+                if (err) {
+                    self._log.error({
+                        error: err,
+                        event: vmChangeEvent
+                    }, 'Error when processing changefeed event');
+                } else {
+                    self._log.debug({
+                        event: vmChangeEvent
+                    }, 'Changefeed event processed successfully');
+                }
+
+                callback(err);
+            });
+};
+
+VmsUpdater.prototype._startProcessingChangefeedEvents =
+    function _startProcessingChangefeedEvents() {
+        var self = this;
+
+        self._changefeedListener.on('data',
+            function processVmChangeEvent(vmChangeEvent) {
+                self._vmChangeEventsQueue.push(vmChangeEvent);
+            });
+    };
 
 function startVmsUpdater(config, log) {
     mod_assert.object(config, 'config');
@@ -431,7 +476,7 @@ function main() {
             morayClient.on('connect', next);
         },
         function initModels(arg, next) {
-            models.init(config, {
+            volumeModels.init(config, {
                 morayClient: morayClient,
                 log: log
             }, next);

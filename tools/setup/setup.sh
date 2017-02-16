@@ -282,6 +282,8 @@ upgrade_core_service_to_latest_branch_image "sdc" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "workflow" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "vmapi" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "docker" "tritonnfs"
+upgrade_core_service_to_latest_branch_image "cloudapi" "tritonnfs"
+
 # The VOLAPI service may have been already enabled by "sdcadm experimental
 # volapi" but the VOLAPI zone may need to be updated to the latest version.
 upgrade_core_service_to_latest_branch_image "volapi" "tritonnfs"

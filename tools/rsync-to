@@ -19,6 +19,7 @@ set -o errexit
 TOP=$(cd $(dirname $0)/../; pwd)
 NODE="root@$1"
 SERVICE=volapi
+UPDATER_SERVICE=volapi-updater
 
 if [[ -z "$VOLAPI_ZONE" ]]; then
     VOLAPI_ZONE=$(ssh $NODE "vmadm lookup -1 alias=volapi0" 2>/dev/null)
@@ -47,4 +48,11 @@ if [[ "$state" == "maintenance" ]]; then
     ssh ${NODE} svcadm -z ${VOLAPI_ZONE} clear ${SERVICE}
 else
     ssh ${NODE} svcadm -z ${VOLAPI_ZONE} restart ${SERVICE}
+fi
+
+state=$(ssh ${NODE} svcs -z ${VOLAPI_ZONE} -H -o state ${UPDATER_SERVICE})
+if [[ "$state" == "maintenance" ]]; then
+    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} clear ${UPDATER_SERVICE}
+else
+    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} restart ${UPDATER_SERVICE}
 fi

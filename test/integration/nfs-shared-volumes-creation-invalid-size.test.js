@@ -56,7 +56,7 @@ test('NFS shared volume creation with invalid size', function (tt) {
 
     tt.test('creating a nfs shared volume with invalid size should fail',
         function (t) {
-            var INVALID_SIZES = ['invalid-size', '%$%#$%', ''];
+            var INVALID_SIZES = ['invalid-size', '%$%#$%', '', 0, -42];
 
             vasync.forEachParallel({
                 func: createVolumeWithInvalidSize,
@@ -66,11 +66,11 @@ test('NFS shared volume creation with invalid size', function (tt) {
             });
 
             function createVolumeWithInvalidSize(invalidSize, callback) {
-                assert.string(invalidSize, 'invalidSize');
                 assert.func(callback, 'callback');
 
-                var expectedErrMsg = 'Validation error, causes: Error: size "'
-                    + invalidSize + '" is not a valid volume size';
+                var expectedErrMsg = 'Validation error, causes: Error: ' +
+                    'Volume size: "' + invalidSize + '" is not a valid ' +
+                    'volume size';
 
                 var volumeParams = {
                     name: volumeName,
