@@ -8,6 +8,115 @@
  * Copyright (c) 2016, Joyent, Inc.
  */
 
+/*
+ * Introduction
+ * ------------
+ *
+ * volapi-updater runs as part of a separate SMF service. Its role is to watch
+ * for changes in state for NFS shared volumes' storage VMs, and update these
+ * volumes' state according to their storage VM's state changes.
+ *
+ * For instance, when a NFS shared volume is created, its state is 'creating'.
+ * As part of the volume creation process, a storage VM is also created. Once
+ * that storage VM changes state to 'running', volapi-updater updates the
+ * corresponding volume to be in state 'ready'
+ *
+ * Changefeed usage
+ * ----------------
+ *
+ * volapi-updater uses changefeed to listen for VMAPI state change events. Every
+ * time an event is published by VMAPI's changefeed publisher, volapi-updater
+ * checks if that event is associated to a VM that acts as a storage VM for a
+ * NFS shared volume. If it is, then volapi-updater determines what the new
+ * volume's state should be based on the current volume's state and the current
+ * storage VM's state, and then write that new volume state to moray.
+ *
+ * Events ordering concerns
+ * ------------------------
+ *
+ * Because changefeed only provide notifications when a VM's state changed (not
+ * the data that changed), and that there's no guarantee on the order of
+ * delivery for events, it is necessary for volapi-updater to serialize the
+ * operation of updating volumes' state in order to avoid races and ending up
+ * with an incorrect state for volumes.
+ *
+ * Following is a diagram that illustrates this type of race:
+ *
+ * SC-VM-R -> GETVM-1 -> SC-VM-S -> GETVM-2 -> RCV-GETVM-2 -> RCV-GETVM-1
+ *                                                 |              |
+ *                                            [VM stopped]    [VM running]
+ *
+ * Where "SC" means "State change", "R" means "Running", "S" means "Stopped",
+ * "RCV" means "Received".
+ *
+ * The diagram above represents two state changes for the same VM. The first one
+ * ("SC-VM-R") represents an event that represents a state change to the
+ * "running" state.
+ *
+ * "GETVM-1" means that we send a GetVm request to VMAPI to get the actual VM
+ * state from VMAPI (it's not included in the event published by changefeed).
+ *
+ * Then "SC-VM-S" represents an event that represents a state change to the
+ * "stopped" state.
+ *
+ * "GETVM-2" means that we send a second GetVm request to VMAPI to get the
+ * actual VM state from VMAPI (it's not included in the event published by
+ * changefeed).
+ *
+ * Finally, we get a response from the _second_ GetVm request (RCV-GETVM-2)
+ * _before_ receiving the response from the _first_ GetVm request. In other
+ * words, we first process that the VM is in a state "stopped", and then
+ * "running". As a result, we consider that the current state of that VM is
+ * "running", when in reality it's stopped.
+ *
+ * By processing only one state change event at a time, we can serialize this
+ * pipeline and transform the above diagram to the following:
+ *
+ * SC-VM-R -> GETVM-1 -> SC-VM-S -> RCV-GETVM-1 -> GETVM-2 -> RCV-GETVM-2
+ *                                      |                         |
+ *                                  [VM running]              [VM stopped]
+ *
+ * We end up with the correct end state for the storage VM: stopped.
+ *
+ * Suboptimal serialization to prevent races
+ * -----------------------------------------
+ *
+ * Currently, volapi-updater serializes all state change events _for all VMs_,
+ * which is suboptimal. If a significant number of different VMs change state at
+ * the same time, actually updating the state of the associate volumes could be
+ * delayed significantly.
+ *
+ * Ideally, we would serialize updates only per VM. This is an improvement that
+ * still needs to be implemented.
+ *
+ * Dealing with concurrent volume state updates
+ * --------------------------------------------
+ *
+ * Contrary to sdc-volapi's API server, volapi-updater doesn't use CNAPI
+ * waitlist tickets, or any kind of locking mechanism that would make it not
+ * update a given volume's state while another operation on that volume that is
+ * holding a lock (such as the sequence of operations performed by a
+ * DeleteVolume request) is ongoing.
+ *
+ * This is fine because the only other operations that can change the state of a
+ * volume are:
+ *
+ * - CreateVolume
+ * - DeleteVolume
+ *
+ * However, the implementation of these operations is designed to not run
+ * concurrently with a volume state update performed by volapi-updater as a
+ * result of a VM change event.
+ *
+ * CreateVolume and DeleteVolume always schedule a storage VM creation _after_
+ * they wrote the latest possible volume state update to moray.
+ *
+ * volapi-updater still uses an etag to not overwrite other changes made to
+ * volume objects, such as when a volume's name is updated. In this case, an
+ * etag conflict error would result in volapi-updater reloading the volume, and
+ * retrying to update its state.
+ */
+
 var execFile = require('child_process').execFile;
 var mod_assert = require('assert-plus');
 var mod_bunyan = require('bunyan');
