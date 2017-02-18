@@ -25,6 +25,7 @@ var clientsSetup = require('./lib/clients-setup');
 var resources = require('./lib/resources');
 var testVolumes = require('./lib/volumes');
 
+var ADMIN_NETWORK_UUID;
 var CONFIG = configLoader.loadConfigSync();
 
 var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
@@ -51,7 +52,12 @@ test('setup', function (tt) {
                 t.ok(networks);
                 t.ok(Array.isArray(networks));
                 t.ok(networks.length > 1);
-                NETWORKS = networks;
+                networks.forEach(function findAdminNetwork(network) {
+                    if (network && network.name === 'admin') {
+                        ADMIN_NETWORK_UUID = network.uuid;
+                    }
+                });
+                t.ok(ADMIN_NETWORK_UUID, 'found admin network');
                 t.end();
             });
     });
@@ -69,7 +75,7 @@ test('nfs shared volumes', function (tt) {
             name: volumeName,
             owner_uuid: UFDS_ADMIN_UUID,
             type: NFS_SHARED_VOLUMES_TYPE_NAME,
-            networks: [NETWORKS[0].uuid]
+            networks: [ADMIN_NETWORK_UUID]
         };
 
         CLIENTS.volapi.createVolumeAndWait(volumeParams,
