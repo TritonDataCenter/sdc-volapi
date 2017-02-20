@@ -231,13 +231,15 @@ function updateVolumeStateFromStorageVm(volume, storageVm) {
     mod_assert.object(storageVm, 'storageVm');
 
     if (storageVm.state === 'running') {
-        volume.state = 'ready';
+        if (volume.state === 'creating' || volume.state === 'failed') {
+            volume.state = 'ready';
+        }
     } else if (storageVm.state === 'destroyed') {
         if (volume.state === 'creating') {
             volume.state = 'failed';
         } else if (volume.state === 'deleting') {
             volume.state = 'deleted';
-        } else {
+        } else if (volume.state !== 'deleted') {
             volume.state = 'failed';
         }
     } else if (storageVm.state === 'failed') {
