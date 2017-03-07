@@ -67,6 +67,13 @@ use volumes, just not through Docker APIs/clients.
   should be installed. By default, the installation process will use `coal` as
   the datacenter name.
 
+3. Install an experimental version of node-triton with NFS shared volumes
+   support:
+
+   ```
+   $ npm install ssh+git@github.com:joyent/node-triton.git#tritonnfs
+   ```
+
 #### Disclaimer
 
 Running `tools/setup/setup.sh` goes through all the steps necessary to enable
