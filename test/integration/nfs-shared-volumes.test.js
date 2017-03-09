@@ -32,10 +32,14 @@ var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
 assert.string(UFDS_ADMIN_UUID, 'UFDS_ADMIN_UUID');
 
 var CLIENTS;
+/*
+ * This regular expression is not meant to match the general ISO 8601 format,
+ * only the specific format outputted by new Date().toISOString().
+ */
+var ISO_DATE_STRING_RE = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/;
+var NETWORKS;
 var NFS_SHARED_VOLUMES_NAMES_PREFIX = 'nfs-shared-volumes';
 var NFS_SHARED_VOLUMES_TYPE_NAME = 'tritonnfs';
-
-var NETWORKS;
 
 test('setup', function (tt) {
     tt.test('setup clients', function (t) {
@@ -93,6 +97,14 @@ test('nfs shared volumes', function (tt) {
                 t.end();
             });
     });
+
+    tt.test('getting newly created nfs shared volume should output it in ' +
+        'proper format', function (t) {
+
+            t.ok(ISO_DATE_STRING_RE.test(sharedNfsVolume.create_timestamp),
+                'create_timestamp field should match ' + ISO_DATE_STRING_RE);
+            t.end();
+        });
 
     tt.test('newly created shared volume not listed int VMAPI ListVms output '
         + 'by default', function (t) {
