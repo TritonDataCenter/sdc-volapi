@@ -106,24 +106,6 @@ test('nfs shared volumes', function (tt) {
             t.end();
         });
 
-    tt.test('newly created shared volume not listed int VMAPI ListVms output '
-        + 'by default', function (t) {
-        CLIENTS.vmapi.listVms(function onListVms(err, vms) {
-            t.ifErr(err, 'listing VMs should not error');
-
-            var filteredVms = vms.filter(function selectSharedVolume(vm) {
-                if (vm.uuid === sharedNfsVolume.vm_uuid) {
-                    return true;
-                }
-
-                return false;
-            });
-            t.equal(filteredVms.length, 0,
-                'newly created volume VM should not be present');
-            t.end();
-        });
-    });
-
     tt.test('mounting the shared volume via NFS suceeds', function (t) {
         nfsRemotePath = sharedNfsVolume.filesystem_path;
         mountPoint = path.join('/mnt', libuuid.create());
