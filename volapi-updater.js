@@ -459,13 +459,7 @@ function updateAllVolumesFromVmApi(vmapiClient, log, callback) {
     log.info('Updating all volumes from VMAPI...');
 
     vmapiClient.listVms({
-        /*
-         * We should list VMs using an indexed property that indicates that a
-         * given VM acts as a host for a NFS shared volume, but there's no such
-         * thing available yet, so instead we rely on the alias that uses a
-         * common prefix for NFS shared volumes VMs.
-         */
-        alias: mod_volumeUtils.NFS_SHARED_VOLUME_VM_ALIAS_PREFIX
+        'tag.smartdc_role': mod_volumeUtils.NFS_SHARED_VOLUME_SMARTDC_ROLE
     }, function onGetAllVolumesVms(getVmsErr, volumeVms) {
         if (getVmsErr) {
             log.error({error: getVmsErr},
