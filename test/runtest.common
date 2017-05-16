@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright 2016, Joyent, Inc.
+# Copyright 2017, Joyent, Inc.
 #
 
 #
@@ -34,4 +34,12 @@ To run this test you must create the file:
 after ensuring you have no production data on this SDC.
 EOF
     exit 2
+fi
+
+# If we're in the global zone, we don't want to use the default 127.0.0.1:80,
+# and instead want to find the admin IP of VOLAPI.
+if [[ $(zonename) == "global" ]]; then
+    # Gather DC info
+    export VOLAPI_URL="http://$(vmadm lookup -j alias=volapi0 | json 0.nics \
+        | json -c 'this.nic_tag==="admin"' 0.ip)"
 fi

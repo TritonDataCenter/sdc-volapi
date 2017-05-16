@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2016, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
@@ -77,10 +77,6 @@ done
 
 # Include common functions (e.g. fatal) and perform prereq checks.
 source $(dirname $0)/runtest.common
-
-# Gather DC info
-export VOLAPI_URL="http://$(vmadm lookup -j alias=volapi0 | json 0.nics \
-    | json -c 'this.nic_tag==="admin"' 0.ip)"
 
 # Setup a clean output dir.
 echo "# Setup a clean output dir ($OUTPUT_DIR)."
