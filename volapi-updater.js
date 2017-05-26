@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 /*
@@ -300,7 +300,20 @@ function updateVolumeFromStorageVm(volumeObject, storageVm, callback) {
             });
     }
 
-    updateVolume();
+    function deleteVolume() {
+        // When deleting we won't hit an Etag error, so we don't need to load
+        // and retry. We can just do the regular retries on transient moray
+        // errors.
+        volumeModels.deleteVolumeWithRetry(volumeObject.value.uuid, callback);
+    }
+
+    if (volumeObject.value.state === 'deleted') {
+        // Switching to 'deleted' means removing the entry rather than updating
+        // it in Moray.
+        deleteVolume();
+    } else {
+        updateVolume();
+    }
 }
 
 function updateVolumeFromVm(vm, log, callback) {
