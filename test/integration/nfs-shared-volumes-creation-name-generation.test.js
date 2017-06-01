@@ -12,22 +12,19 @@ var assert = require('assert-plus');
 var test = require('tape');
 var vasync = require('vasync');
 
-var configLoader = require('../../lib/config-loader');
-
 var clientsSetup = require('./lib/clients-setup');
+var configLoader = require('../../lib/config-loader');
 var resources = require('./lib/resources');
 
-var CONFIG = configLoader.loadConfigSync();
-
-var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
-assert.string(UFDS_ADMIN_UUID, 'UFDS_ADMIN_UUID');
-
+var ADMIN_OWNED_FABRIC_NETWORK_UUID;
 var CLIENTS;
+var CONFIG = configLoader.loadConfigSync();
 var CREATED_VOLUMES = []; // volumes we created and need to destroy
 var NFS_SHARED_VOLUMES_NAMES_PREFIX = 'nfs-shared-volumes';
 var NFS_SHARED_VOLUMES_TYPE_NAME = 'tritonnfs';
+var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
 
-var NETWORKS;
+assert.string(UFDS_ADMIN_UUID, 'UFDS_ADMIN_UUID');
 
 test('setup', function (tt) {
     tt.test('setup clients', function (t) {
@@ -38,14 +35,27 @@ test('setup', function (tt) {
     });
 
     tt.test('setup networks', function (t) {
-        CLIENTS.napi.get('/networks',
+        CLIENTS.napi.get('/networks?owner_uuid=' + UFDS_ADMIN_UUID,
             function onListNetworks(err, networks) {
+                var idx;
+
                 t.ifError(err, 'expected success listing networks');
                 t.ok(networks, 'got networks from NAPI');
                 t.ok(Array.isArray(networks),
                     'networks object from NAPI is an array');
                 t.ok(networks.length > 1, 'expected more than 1 NAPI network');
-                NETWORKS = networks;
+
+                for (idx = 0; idx < networks.length &&
+                    !ADMIN_OWNED_FABRIC_NETWORK_UUID; idx++) {
+                    if (networks[idx].fabric) {
+                        ADMIN_OWNED_FABRIC_NETWORK_UUID = networks[idx].uuid;
+                    }
+                }
+
+                t.ok(ADMIN_OWNED_FABRIC_NETWORK_UUID,
+                    'expected to find admin-owned fabric network, got: ' +
+                    ADMIN_OWNED_FABRIC_NETWORK_UUID);
+
                 t.end();
             });
     });
@@ -57,7 +67,7 @@ test('NFS shared volume creation with missing "name"', function (tt) {
             var COMMON_PAYLOAD = {
                 owner_uuid: UFDS_ADMIN_UUID,
                 type: NFS_SHARED_VOLUMES_TYPE_NAME,
-                networks: [NETWORKS[0].uuid]
+                networks: [ADMIN_OWNED_FABRIC_NETWORK_UUID]
             };
             var EMPTY_NAME_PAYLOAD = JSON.parse(JSON.stringify(COMMON_PAYLOAD));
             var MISSING_NAME_PAYLOADS;

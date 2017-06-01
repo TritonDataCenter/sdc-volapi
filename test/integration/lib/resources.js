@@ -5,16 +5,24 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var libuuid = require('libuuid');
 
-function makeResourceName(prefix) {
+function makeResourceName(prefix, uuid) {
     assert.string(prefix, 'prefix');
 
-    return [prefix, libuuid.create().split('-')[0]].join('-');
+    var shortId;
+
+    if (uuid) {
+        shortId = uuid.split('-')[0];
+    } else {
+        shortId = libuuid.create().split('-')[0];
+    }
+
+    return [prefix, shortId].join('-');
 }
 
 module.exports = {

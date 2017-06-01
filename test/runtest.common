@@ -22,6 +22,16 @@ function fatal
     exit 1
 }
 
+#
+# Ensure we're not in the global zone, and that it looks like the volapi zone.
+#
+# All tests must run in the volapi zone, since the volapi zone is on the admin
+# network so it already has access to all of the Triton services that it needs
+# and this way we don't need to support different mechanisms for GZ and non-GZ.
+#
+if [[ $(zonename) == "global" || ! -d /opt/smartdc/volapi ]]; then
+   fatal "These tests must run in the volapi zone"
+fi
 
 # Guard
 guard_file=/lib/sdc/.sdc-test-no-production-data
@@ -34,12 +44,4 @@ To run this test you must create the file:
 after ensuring you have no production data on this SDC.
 EOF
     exit 2
-fi
-
-# If we're in the global zone, we don't want to use the default 127.0.0.1:80,
-# and instead want to find the admin IP of VOLAPI.
-if [[ $(zonename) == "global" ]]; then
-    # Gather DC info
-    export VOLAPI_URL="http://$(vmadm lookup -j alias=volapi0 | json 0.nics \
-        | json -c 'this.nic_tag==="admin"' 0.ip)"
 fi

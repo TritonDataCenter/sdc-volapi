@@ -6,7 +6,11 @@
 #
 
 #
-# Copyright (c) 2015, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
+#
+# All tests must run in the volapi zone, since the volapi zone is on the admin
+# network so it already has access to all of the Triton services that it needs
+# and this way we don't need to support different mechanisms for GZ and non-GZ.
 #
 
 # Run a single test of any type.

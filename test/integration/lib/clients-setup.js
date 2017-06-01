@@ -5,19 +5,20 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
 var Logger = require('bunyan');
 var restify = require('restify');
-var VOLAPI = require('sdc-clients').VOLAPI;
+var IMGAPI = require('sdc-clients').IMGAPI;
 var NAPI = require('sdc-clients').NAPI;
+var PAPI = require('sdc-clients').PAPI;
 var VMAPI = require('sdc-clients').VMAPI;
+var VOLAPI = require('sdc-clients').VOLAPI;
 
 var configLoader = require('../../../lib/config-loader');
 var CONFIG = configLoader.loadConfigSync();
-
 var VOLAPI_URL = process.env.VOLAPI_URL || 'http://localhost';
 
 function getApiClients(callback) {
@@ -34,11 +35,8 @@ function getApiClients(callback) {
         }
     });
 
-    var volapiClient = new VOLAPI({
-        url: VOLAPI_URL,
-        version: '^1',
-        userAgent: 'sdc-volapi-integration-tests',
-        log: logger,
+    var imgapiClient = new IMGAPI({
+        url: CONFIG.imgapi.url,
         agent: false
     });
 
@@ -47,15 +45,30 @@ function getApiClients(callback) {
         agent: false
     });
 
+    var papiClient = new PAPI({
+        url: CONFIG.papi.url,
+        agent: false
+    });
+
     var vmapiClient = new VMAPI({
         url: CONFIG.vmapi.url,
         agent: false
     });
 
+    var volapiClient = new VOLAPI({
+        url: VOLAPI_URL,
+        version: '^1',
+        userAgent: 'sdc-volapi-integration-tests',
+        log: logger,
+        agent: false
+    });
+
     callback(null, {
-        volapi: volapiClient,
+        imgapi: imgapiClient,
         napi: napiClient,
-        vmapi: vmapiClient
+        papi: papiClient,
+        vmapi: vmapiClient,
+        volapi: volapiClient
     });
 }
 

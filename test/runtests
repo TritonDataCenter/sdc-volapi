@@ -10,8 +10,10 @@
 #
 
 #
-# Run SDC Docker *integration* tests.
-# This is expected to be run from GZ.
+# All tests must run in the volapi zone, since the volapi zone is on the admin
+# network so it already has access to all of the Triton services that it needs
+# and this way we don't need to support different mechanisms for GZ and non-GZ.
+#
 #
 # This creates .tap files in OUTPUT_DIR that can be processed by a TAP reader.
 # Testing config and log files are also placed in this dir.
