@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright (c) 2017, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -171,7 +171,7 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
         });
 });
 
-test('listing nfs shared volumes with an empty predicate', function (tt) {
+test('listing nfs shared volumes with simple predicates', function (tt) {
     var snowflakeName1 =
             resources.makeResourceName(VOLUMES_NAMES_PREFIX + '-empty');
     var snowflakeName2 =
@@ -244,54 +244,10 @@ test('listing nfs shared volumes with an empty predicate', function (tt) {
             });
         });
 
-    tt.test('removing test volume objects should succeed', function (t) {
-        vasync.forEachParallel({
-            func: deleteTestVolumeObject,
-            inputs: testVolumeObjects.map(function getVolumeUuid(volume) {
-                assert.object(volume, 'volume');
-                return volume.uuid;
-            })
-        }, function allTestVolumeObjectsDeleted(err, results) {
-            t.ifErr(err, 'deleting test volume objects should not error');
-            t.end();
-        });
-    });
-});
-
-test('listing nfs shared volumes with a simple name predicate', function (tt) {
-
-    var snowflakeName =
-            resources.makeResourceName(VOLUMES_NAMES_PREFIX + '-simple-name');
-
-    var testVolumeObjects = [
-        {
-            uuid: libuuid.create(),
-            name: resources.makeResourceName(VOLUMES_NAMES_PREFIX),
-            owner_uuid: UFDS_ADMIN_UUID,
-            type: 'tritonnfs'
-        },
-        {
-            uuid: libuuid.create(),
-            name: snowflakeName,
-            owner_uuid: UFDS_ADMIN_UUID,
-            type: 'tritonnfs'
-        }
-    ];
-
-    tt.test('creating test volume objects should succeed', function (t) {
-        vasync.forEachParallel({
-            func: createTestVolumeObject,
-            inputs: testVolumeObjects
-        }, function allTestVolumeObjectsCreated(err, results) {
-            t.ifErr(err, 'creating test volume objects should not error');
-            t.end();
-        });
-    });
-
     tt.test('list test volume objects with simple predicate on name',
         function (t) {
             var predicate = {
-                eq: ['name', snowflakeName]
+                eq: ['name', snowflakeName1]
             };
 
             API_CLIENTS.volapi.listVolumes({
@@ -305,9 +261,10 @@ test('listing nfs shared volumes with a simple name predicate', function (tt) {
                 t.equal(volumes.length, 1,
                     'only one volume should be included in the response '
                         + 'body');
-                t.equal(volumes[0].name, snowflakeName,
+                t.equal(volumes[0].name, snowflakeName1,
                     'the name of the volume returned in the response '
-                        + 'should be: ' + snowflakeName);
+                        + 'should be: ' + snowflakeName1 + ', got: '
+                        + volumes[0].name);
                 t.end();
             });
         });
@@ -326,10 +283,20 @@ test('listing nfs shared volumes with a simple name predicate', function (tt) {
     });
 });
 
-test('listing volumes with a composed state/name predicate', function (tt) {
+test('listing volumes with composed predicates', function (tt) {
+
+    var MEBIBYTES_PER_GIBIBYTE = 1024;
 
     var snowflakeName =
-            resources.makeResourceName(VOLUMES_NAMES_PREFIX + '-state');
+            resources.makeResourceName(VOLUMES_NAMES_PREFIX + '-composed');
+
+    var snowflakeSize1 = 10 * MEBIBYTES_PER_GIBIBYTE;
+    var snowflakeSize2 = 20 * MEBIBYTES_PER_GIBIBYTE;
+    var snowflakeSize3 = 30 * MEBIBYTES_PER_GIBIBYTE;
+
+    var snowflakeState1 = 'creating';
+    var snowflakeState2 = 'running';
+    var snowflakeState3 = 'failed';
 
     var testVolumeObjects = [
         {
@@ -337,21 +304,24 @@ test('listing volumes with a composed state/name predicate', function (tt) {
             name: snowflakeName,
             owner_uuid: UFDS_ADMIN_UUID,
             type: 'tritonnfs',
-            state: 'creating'
+            state: snowflakeState1,
+            size: snowflakeSize1
         },
         {
             uuid: libuuid.create(),
             name: snowflakeName,
             owner_uuid: UFDS_ADMIN_UUID,
             type: 'tritonnfs',
-            state: 'creating'
+            state: snowflakeState2,
+            size: snowflakeSize2
         },
         {
             uuid: libuuid.create(),
             name: snowflakeName,
             owner_uuid: UFDS_ADMIN_UUID,
             type: 'tritonnfs',
-            state: 'failed'
+            state: snowflakeState3,
+            size: snowflakeSize3
         }
     ];
 
@@ -365,7 +335,7 @@ test('listing volumes with a composed state/name predicate', function (tt) {
         });
     });
 
-    tt.test('list test volume objects with predicate on state',
+    tt.test('list test volume objects with composed predicate on state',
         function (t) {
             var predicate = {
                 and: [
@@ -373,7 +343,7 @@ test('listing volumes with a composed state/name predicate', function (tt) {
                         eq: ['name', snowflakeName]
                     },
                     {
-                        eq: ['state', 'creating']
+                        eq: ['state', snowflakeState1]
                     }
                 ]
             };
@@ -382,19 +352,49 @@ test('listing volumes with a composed state/name predicate', function (tt) {
                 predicate: JSON.stringify(predicate)
             }, function onListVolumes(err, volumes) {
                 t.ifErr(err,
-                    'listing volumes with a name predicate should not '
+                    'listing volumes with a composed predicate should not '
                         + 'error');
                 t.ok(Array.isArray(volumes),
                     'response body should be an array');
-                t.equal(volumes.length, 2,
-                    'only two volumes should be included in the response '
+                t.equal(volumes.length, 1,
+                    'only one volume should be included in the response '
                         + 'body');
-                t.equal(volumes[0].state, 'creating',
+                t.equal(volumes[0].state, snowflakeState1,
                     'the state of the first volume returned in the '
-                        + 'response should be: creating');
-                t.equal(volumes[1].state, 'creating',
-                    'the state of the first volume returned in the '
-                        + 'response should be: creating');
+                        + 'response should be: ' + snowflakeState1 + ', got: ' +
+                        volumes[0].state);
+                t.end();
+            });
+        });
+
+    tt.test('list test volume objects with composed predicate on size',
+        function (t) {
+            var predicate = {
+                and: [
+                    {
+                        eq: ['name', snowflakeName]
+                    },
+                    {
+                        eq: ['size', snowflakeSize1]
+                    }
+                ]
+            };
+
+            API_CLIENTS.volapi.listVolumes({
+                predicate: JSON.stringify(predicate)
+            }, function onListVolumes(err, volumes) {
+                t.ifErr(err,
+                    'listing volumes with a composed predicate should not '
+                        + 'error');
+                t.ok(Array.isArray(volumes),
+                    'response body should be an array');
+                t.equal(volumes.length, 1,
+                    'only one volume should be included in the response '
+                        + 'body');
+                t.equal(volumes[0].size, snowflakeSize1,
+                    'the size of the first volume returned in the '
+                        + 'response should be: ' + snowflakeSize1 + ', got: '
+                        + volumes[0].size);
                 t.end();
             });
         });
