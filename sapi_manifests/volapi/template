@@ -7,10 +7,6 @@
         "port": 80
     },
     "wfapi": {
-        "forceMd5Check": true,
-        "workflows": [
-            "provision-volume-vm"
-        ],
         "url": "http://{{{WORKFLOW_SERVICE}}}"
     },
     "cnapi": {
