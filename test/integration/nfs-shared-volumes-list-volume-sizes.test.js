@@ -32,7 +32,7 @@ test('setup', function (tt) {
 });
 
 test('listVolumeSizes', function (tt) {
-    tt.test(' GET /volumes/sizes should return array of sizes', function (t) {
+    tt.test(' GET /volumesizes should return array of sizes', function (t) {
         CLIENTS.volapi.listVolumeSizes({type: 'tritonnfs'},
             function onListVolumeSizes(err, volumeSizes) {
                 var idx = 0;
