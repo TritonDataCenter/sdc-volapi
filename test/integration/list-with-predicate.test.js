@@ -155,17 +155,76 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
             });
         });
 
-    tt.test('using invalid name value in predicate should error',
+    tt.test('using invalid name value in predicate should error', function (t) {
+        var predicate = {
+            eq: ['name', '/invalid/name']
+        };
+
+        API_CLIENTS.volapi.listVolumes({
+            predicate: JSON.stringify(predicate)
+        }, function onListVolumes(err, req, res, obj) {
+            t.ok(err,
+                'listing volumes with invalid predicate should error');
+            t.end();
+        });
+    });
+
+    tt.test('using malformed predicate should error', function (t) {
+        var MALFORMED_PREDICATE = 'foo';
+
+        API_CLIENTS.volapi.listVolumes({
+            predicate: MALFORMED_PREDICATE
+        }, function onListVolumes(err, req, res, obj) {
+            var expectedErrMsg = 'Could not parse JSON predicate ' +
+                MALFORMED_PREDICATE;
+            var expectedStatusCode = 409;
+
+            t.ok(err,
+                'listing volumes with invalid predicate should error');
+            t.equal(err.statusCode, expectedStatusCode,
+                'response status code shoud be ' + expectedStatusCode +
+                    ', was: ' + res.statusCode);
+
+            t.ok(err.message, 'response should have error message, was: ' +
+                err.message);
+            if (err.message !== undefined) {
+                t.ok(err.message.indexOf(expectedErrMsg) !== -1,
+                    'error message should include ' + expectedErrMsg +
+                        ', was: ' + err.message);
+            }
+
+            t.end();
+        });
+    });
+
+    tt.test('using invalid value type in predicate should error',
         function (t) {
             var predicate = {
-                eq: ['name', '/invalid/name']
+                eq: ['invalid-pred', null]
             };
 
             API_CLIENTS.volapi.listVolumes({
                 predicate: JSON.stringify(predicate)
             }, function onListVolumes(err, req, res, obj) {
+                var expectedErrMsg =
+                    'predicate { eq: [ \'invalid-pred\', null ] }: field ' +
+                        '\"invalid-pred\" is not a string, number, or boolean';
+                var expectedStatusCode = 409;
+
                 t.ok(err,
                     'listing volumes with invalid predicate should error');
+                t.equal(err.statusCode, expectedStatusCode,
+                    'response status code shoud be ' + expectedStatusCode +
+                        ', was: ' + res.statusCode);
+
+                t.ok(err.message, 'response should have error message, was: ' +
+                    err.message);
+                if (err.message !== undefined) {
+                    t.ok(err.message.indexOf(expectedErrMsg) !== -1,
+                        'error message should include ' + expectedErrMsg +
+                            ', was: ' + err.message);
+                }
+
                 t.end();
             });
         });
