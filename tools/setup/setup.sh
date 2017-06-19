@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2016, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 # This is the first platform build that integrates the fix for DOCKER-754 that
@@ -49,7 +49,7 @@ function usage
 function cns_need_platform_upgrade
 {
     local datacenter_name=$1
-    local cns_platform_versions=$(ssh $datacenter_name \
+    local cns_platform_versions=$(ssh root@$datacenter_name \
         "/opt/smartdc/bin/sdc-oneachnode -j -N -c 'uname -v'" | \
         json -a result.stdout | \
         cut -d '_' -f 2)
@@ -66,7 +66,7 @@ function cns_need_platform_upgrade
 
 function coal_needs_platform_upgrade
 {
-    local coal_headnode_platform_version=$(ssh $datacenter_name uname -v | \
+    local coal_headnode_platform_version=$(ssh root@$datacenter_name uname -v | \
         cut -d '_' -f 2)
 
     if [[ "$coal_headnode_platform_version" < \
@@ -86,7 +86,7 @@ function upgrade_platform_to_latest_master
 
     echo "Upgrading platform to latest master on all CNs..."
 
-    latest_master_platform_uuid_and_version=$(ssh $datacenter_name \
+    latest_master_platform_uuid_and_version=$(ssh root@$datacenter_name \
         /opt/smartdc/bin/updates-imgadm list -H -o uuid,version name=platform \
         version=~master | tail -1)
     latest_master_platform_uuid=$(echo $latest_master_platform_uuid_and_version\
@@ -95,11 +95,11 @@ function upgrade_platform_to_latest_master
         | cut -d ' ' -f 2 | cut -d '-' -f 2)
 
     echo "Installing latest master platform..."
-    ssh $datacenter_name /opt/smartdc/bin/sdcadm platform install \
+    ssh root@$datacenter_name /opt/smartdc/bin/sdcadm platform install \
         "$latest_master_platform_uuid"
 
     echo "Assigning latest master platform to all CNs..."
-    ssh $datacenter_name /opt/smartdc/bin/sdcadm platform assign --all \
+    ssh root@$datacenter_name /opt/smartdc/bin/sdcadm platform assign --all \
         $latest_master_platform_version
 
     echo "Platform upgrade done, please reboot all CNs in order for " \
