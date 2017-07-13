@@ -1,5 +1,5 @@
 {
 	"name": "volapi",
 	"path": "/opt/smartdc/volapi/config.json",
-	"post_cmd": "/usr/sbin/svcadm restart volapi"
+	"post_cmd": "/usr/sbin/svcadm restart volapi-updater && /usr/sbin/svcadm restart volapi-server"
 }

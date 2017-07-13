@@ -7,7 +7,7 @@
 #
 
 #
-# Copyright (c) 2016, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 export PS4='[\D{%FT%TZ}] ${BASH_SOURCE}:${LINENO}: ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -16,11 +16,11 @@ set -o xtrace
 service_name='volapi'
 
 echo "Updating SMF manifests"
-$(/opt/local/bin/gsed -i"" -e "s/@@PREFIX@@/\/opt\/smartdc\/${service_name}/g" /opt/smartdc/${service_name}/smf/manifests/${service_name}.xml)
+$(/opt/local/bin/gsed -i"" -e "s/@@PREFIX@@/\/opt\/smartdc\/${service_name}/g" /opt/smartdc/${service_name}/smf/manifests/${service_name}-server.xml)
 $(/opt/local/bin/gsed -i"" -e "s/@@PREFIX@@/\/opt\/smartdc\/${service_name}/g" /opt/smartdc/${service_name}/smf/manifests/${service_name}-updater.xml)
 
-echo "Importing ${service_name}.xml"
-/usr/sbin/svccfg import /opt/smartdc/${service_name}/smf/manifests/${service_name}.xml
+echo "Importing ${service_name}-server.xml"
+/usr/sbin/svccfg import /opt/smartdc/${service_name}/smf/manifests/${service_name}-server.xml
 
 echo "Importing ${service_name}-updater.xml"
 /usr/sbin/svccfg import /opt/smartdc/${service_name}/smf/manifests/${service_name}-updater.xml

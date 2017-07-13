@@ -11,7 +11,7 @@
 -->
 
 <service_bundle type="manifest" name="volapi">
-    <service name="smartdc/application/volapi-updater" type="service" version="1">
+    <service name="smartdc/application/volapi-server" type="service" version="1">
 
     <dependency name="network" grouping="require_all" restart_on="error" type="service">
         <service_fmri value="svc:/network/physical" />
@@ -38,8 +38,9 @@
     <exec_method
         type="method"
         name="start"
-        exec="@@NODE@@ --abort_on_uncaught_exception @@PREFIX@@/volapi-updater.js &amp;"
+        exec="@@NODE@@ --abort_on_uncaught_exception @@PREFIX@@/server.js &amp;"
         timeout_seconds="30" />
+
     <exec_method type="method" name="stop" exec=":kill" timeout_seconds="30" />
 
     <instance name="default" enabled="true" />
