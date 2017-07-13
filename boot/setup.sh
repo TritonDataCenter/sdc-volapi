@@ -38,6 +38,7 @@ echo "Adding log rotation"
 sdc_log_rotation_add config-agent /var/svc/log/*config-agent*.log 1g
 sdc_log_rotation_add registrar /var/svc/log/*registrar*.log 1g
 sdc_log_rotation_add $role /var/svc/log/*$role*.log 1g
+sdc_log_rotation_add volapi-updater /var/svc/log/*volapi-updater*.log 1g
 sdc_log_rotation_setup_end
 
 # All done, run boilerplate end-of-setup
