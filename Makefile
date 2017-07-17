@@ -24,7 +24,7 @@ JSL_FILES_NODE	 = $(JS_FILES)
 JSSTYLE_FILES	 = $(JS_FILES)
 JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
 SERVICE_NAME     = volapi
-SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME).xml.in smf/manifests/$(SERVICE_NAME)-updater.xml.in
+SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME)-server.xml.in smf/manifests/$(SERVICE_NAME)-updater.xml.in
 
 NODE_PREBUILT_VERSION=v4.6.1
 

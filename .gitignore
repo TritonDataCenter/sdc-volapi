@@ -6,5 +6,5 @@ docs/*.html
 cscope.in.out
 cscope.po.out
 cscope.out
-smf/manifests/volapi.xml
+smf/manifests/volapi-server.xml
 smf/manifests/volapi-updater.xml

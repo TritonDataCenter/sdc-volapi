@@ -19,15 +19,14 @@ role=volapi
 
 # Include common utility functions (then run the boilerplate)
 source /opt/smartdc/boot/lib/util.sh
-CONFIG_AGENT_LOCAL_MANIFESTS_DIRS=/opt/smartdc/$role
 sdc_common_setup
 
 # Cookie to identify this as a SmartDC zone and its role
 mkdir -p /var/smartdc/$role
 
 # Install VOLAPI
-mkdir -p /opt/smartdc/${role}
-chown -R nobody:nobody /opt/smartdc/${role}
+mkdir -p /opt/smartdc/$role
+chown -R nobody:nobody /opt/smartdc/$role
 
 # Add build/node/bin and node_modules/.bin to PATH
 echo "" >>/root/.profile
@@ -37,7 +36,7 @@ echo "Adding log rotation"
 # Log rotation.
 sdc_log_rotation_add config-agent /var/svc/log/*config-agent*.log 1g
 sdc_log_rotation_add registrar /var/svc/log/*registrar*.log 1g
-sdc_log_rotation_add $role /var/svc/log/*$role*.log 1g
+sdc_log_rotation_add $role /var/svc/log/*volapi-server*.log 1g
 sdc_log_rotation_add volapi-updater /var/svc/log/*volapi-updater*.log 1g
 sdc_log_rotation_setup_end
 
