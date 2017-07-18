@@ -19,6 +19,7 @@ role=volapi
 
 # Include common utility functions (then run the boilerplate)
 source /opt/smartdc/boot/lib/util.sh
+CONFIG_AGENT_LOCAL_MANIFESTS_DIRS=/opt/smartdc/$role
 sdc_common_setup
 
 # Cookie to identify this as a SmartDC zone and its role
