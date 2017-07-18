@@ -16,30 +16,46 @@
   file with the path to whereever this package gets installed.
  -->
 
-<service_bundle type="manifest" name="smartdc-ca-castashsvc">
-<service name="smartdc/application/volapi-server" type="service" version="1">
+<service_bundle type="manifest" name="volapi">
+    <service name="smartdc/application/volapi-server" type="service" version="1">
 
-<dependency name="network" grouping="require_all" restart_on="error" type="service">
-	<service_fmri value="svc:/network/physical" />
-</dependency>
-<dependency name="filesystem" grouping="require_all" restart_on="error" type="service">
-	<service_fmri value="svc:/system/filesystem/local" />
-</dependency>
+    <dependency name="network" grouping="require_all" restart_on="error" type="service">
+        <service_fmri value="svc:/network/physical" />
+    </dependency>
 
-<exec_method
-    type="method"
-    name="start"
-    exec="@@NODE@@ --abort_on_uncaught_exception @@PREFIX@@/server.js &amp;"
-    timeout_seconds="30" />
-<exec_method type="method" name="stop" exec=":kill" timeout_seconds="30" />
+    <dependency name="filesystem" grouping="require_all" restart_on="error" type="service">
+        <service_fmri value="svc:/system/filesystem/local" />
+    </dependency>
 
-<instance name="default" enabled="true" />
+    <dependency name="mdata"
+                grouping="require_all"
+                restart_on="none"
+                type="service">
+        <service_fmri value="svc:/smartdc/mdata:execute" />
+    </dependency>
 
-<stability value='Unstable' />
+    <dependency name="config-agent"
+                grouping="optional_all"
+                restart_on="none"
+                type="service">
+        <service_fmri value="svc:/smartdc/application/config-agent" />
+    </dependency>
 
-<template>
-	<common_name><loctext xml:lang="C">SDC Volumes API</loctext></common_name>
-</template>
+    <exec_method
+        type="method"
+        name="start"
+        exec="@@NODE@@ --abort_on_uncaught_exception @@PREFIX@@/server.js &amp;"
+        timeout_seconds="30" />
 
-</service>
+    <exec_method type="method" name="stop" exec=":kill" timeout_seconds="30" />
+
+    <instance name="default" enabled="true" />
+
+    <stability value='Unstable' />
+
+    <template>
+        <common_name><loctext xml:lang="C">SDC Volumes API</loctext></common_name>
+    </template>
+
+    </service>
 </service_bundle>
