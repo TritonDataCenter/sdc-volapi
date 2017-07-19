@@ -6,7 +6,7 @@
 #
 
 #
-# Copyright (c) 2016, Joyent, Inc.
+# Copyright (c) 2017, Joyent, Inc.
 #
 
 #
@@ -18,7 +18,8 @@ set -o errexit
 
 TOP=$(cd $(dirname $0)/../; pwd)
 NODE="root@$1"
-SERVICE=volapi
+ROLE=volapi
+SERVER_SERVICE=volapi-server
 UPDATER_SERVICE=volapi-updater
 
 if [[ -z "$VOLAPI_ZONE" ]]; then
@@ -31,11 +32,11 @@ if [[ $(uname -s) != "SunOS" ]]; then
     extraOpts="--exclude *.node --exclude build"
 else
     # Clean node_modules everytime.
-    ssh $NODE rm -rf /zones/$VOLAPI_ZONE/root/opt/smartdc/${SERVICE}/node_modules
+    ssh $NODE rm -rf /zones/$VOLAPI_ZONE/root/opt/smartdc/${ROLE}/node_modules
 fi
 
 rsync -av ${TOP}/ \
-    $NODE:/zones/$VOLAPI_ZONE/root/opt/smartdc/${SERVICE}/ \
+    $NODE:/zones/$VOLAPI_ZONE/root/opt/smartdc/${ROLE}/ \
     $extraOpts \
     --exclude .git/ \
     --exclude /config.json \
@@ -43,11 +44,11 @@ rsync -av ${TOP}/ \
     --exclude /doc/ \
     --exclude /tmp/
 
-state=$(ssh ${NODE} svcs -z ${VOLAPI_ZONE} -H -o state ${SERVICE})
+state=$(ssh ${NODE} svcs -z ${VOLAPI_ZONE} -H -o state ${SERVER_SERVICE})
 if [[ "$state" == "maintenance" ]]; then
-    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} clear ${SERVICE}
+    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} clear ${SERVER_SERVICE}
 else
-    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} restart ${SERVICE}
+    ssh ${NODE} svcadm -z ${VOLAPI_ZONE} restart ${SERVER_SERVICE}
 fi
 
 state=$(ssh ${NODE} svcs -z ${VOLAPI_ZONE} -H -o state ${UPDATER_SERVICE})
