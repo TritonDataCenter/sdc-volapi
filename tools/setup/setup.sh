@@ -275,8 +275,8 @@ else
     fatal "Could not find latest sdcadm version with tritonnfs support"
 fi
 
-echo "Enabling experimental VOLAPI service"
-sdcadm experimental volapi
+echo "Setting up VOLAPI service"
+sdcadm post-setup volapi
 
 upgrade_core_service_to_latest_branch_image "sdc" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "workflow" "tritonnfs"
@@ -291,10 +291,8 @@ upgrade_core_service_to_latest_branch_image "volapi" "tritonnfs"
 # Needed to add additional programs in the HN's GZ, such as sdc-volapi
 upgrade_gz_tools_to_latest_branch_image tritonnfs
 
-echo "Restarting sdc-docker to account for configuration changes..."
-/opt/smartdc/bin/sdc-login -l docker svcadm restart config-agent
-/opt/smartdc/bin/sdc-login -l docker svcadm restart docker
-echo "sdc-docker restarted!"
+# Now enable the experimental_nfs_shared_volumes flag in SAPI
+sdcadm experimental nfs-volumes
 
 EOS
 
