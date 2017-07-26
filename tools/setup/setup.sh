@@ -288,13 +288,6 @@ upgrade_core_service_to_latest_branch_image "cloudapi" "tritonnfs"
 # volapi" but the VOLAPI zone may need to be updated to the latest version.
 upgrade_core_service_to_latest_branch_image "volapi" "tritonnfs"
 
-echo "Running other experimental migration processes"
-# "sdcadm experimental update-other" takes care of doing things such as adding a
-# VOLAPI_SERVICE key in the sdc's SAPI application metadata, running VMAPI
-# migrations, etc., which are not done by "sdcadm experimental volapi", so this
-# needs to be run every time to make sure everything is up to date.
-sdcadm experimental update-other
-
 # Needed to add additional programs in the HN's GZ, such as sdc-volapi
 upgrade_gz_tools_to_latest_branch_image tritonnfs
 
