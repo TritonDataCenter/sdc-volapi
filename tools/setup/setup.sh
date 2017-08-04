@@ -173,7 +173,15 @@ function fatal
     exit 1
 }
 
-function get_latest_img_uuid
+# This function achieves the same goal as get_latest_img_uuid, but is used when
+# the images for which we want to get the latest build from a given branch don't
+# have the branch name outputted by "updates-imgadm list". In this case, we need
+# to get the branch information from IMGAPI by performing a GetImage request,
+# which is a lot more time consuming. As a result, this function should be used
+# only when needed, e.g for images such as sdcadm and gz-tools. It seems core
+# service images (e.g docker, volapi, etc.) don't have that limitation, and for
+# them using the "get_latest_img_uuid" function is highly recommended.
+function get_latest_img_uuid_using_imgapi_version
 {
     local image_name=$1
     local branch_pattern=$2
@@ -181,22 +189,38 @@ function get_latest_img_uuid
     local branch_img_uuid
     local latest_branch_img_uuid
 
-    images=$(/opt/smartdc/bin/updates-imgadm -H -C experimental \
-        list name=$image_name | cut -d ' ' -f 1)
+    images=($(/opt/smartdc/bin/updates-imgadm -H -C experimental \
+        list name=$image_name | cut -d ' ' -f 1 | tr '\n' ' '))
     # Find latest image with a name that matches $image_name created from a
     # branch whose name matches $branch_pattern. It is currently assumed that
-    # the output of updates-imgadm list is sorted by publishing date.
-    for IMG in ${images};\
+    # the output of updates-imgadm list is sorted by publishing date, so we can
+    # process the list of images from the last (most recent) to the first
+    # (oldest) and stop at the first one that was generated from a branch that
+    # matches $branch_pattern.
+    for ((i = ${#images[@]} - 1; i >= 0; i--)); \
     do
-        branch_img_uuid=$(updates-imgadm -C experimental get "${IMG}" | \
+        branch_img_uuid=$(updates-imgadm -C experimental get "${images[i]}" | \
             json -c "(version != null && \
             version.indexOf('"${branch_pattern}"') !== -1) || \
             (tags != null && tags.buildstamp != null && \
             tags.buildstamp.indexOf('"${branch_pattern}"') !== -1)" uuid)
         if [[ "$branch_img_uuid" != "" ]]; then
             latest_branch_img_uuid=$branch_img_uuid
+            break
         fi
     done
+    echo "$latest_branch_img_uuid"
+}
+
+function get_latest_img_uuid
+{
+    local image_name=$1
+    local branch_pattern=$2
+    local latest_branch_img_uuid
+
+    latest_branch_img_uuid=$(/opt/smartdc/bin/updates-imgadm -H -C \
+        experimental list name=$image_name | grep $branch_pattern | \
+        tail -1 | cut -d ' ' -f 1)
 
     echo "$latest_branch_img_uuid"
 }
@@ -247,7 +271,8 @@ function upgrade_gz_tools_to_latest_branch_image
 
     local latest_img_uuid
 
-    latest_img_uuid=$(get_latest_img_uuid gz-tools "$branch_name")
+    latest_img_uuid=$(get_latest_img_uuid_using_imgapi_version gz-tools \
+        "$branch_name")
     if [ "x$latest_img_uuid" != "x" ]; then
         echo "Updating gz-tools to image ${latest_img_uuid}"
         sdcadm experimental update-gz-tools -C experimental "$latest_img_uuid"
@@ -260,7 +285,8 @@ function upgrade_gz_tools_to_latest_branch_image
 echo "Making sure sdcadm is up to date..."
 sdcadm_installed_version=$(sdcadm --version | cut -d ' ' -f 3 | tr -d '()')
 echo "Current sdcadm version: $sdcadm_installed_version"
-latest_sdcadm_tritonnfs_img=$(get_latest_img_uuid "sdcadm" "tritonnfs")
+latest_sdcadm_tritonnfs_img=$(get_latest_img_uuid_using_imgapi_version \
+    "sdcadm" "tritonnfs")
 if [ "x$latest_sdcadm_tritonnfs_img" != "x" ]; then
     latest_sdcadm_tritonnfs_img_buildstamp=$(updates-imgadm  -C experimental \
         get "$latest_sdcadm_tritonnfs_img" | json tags.buildstamp)
