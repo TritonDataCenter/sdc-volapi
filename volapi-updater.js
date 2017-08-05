@@ -922,7 +922,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                 }
 
                 if (ctx.vm === undefined ||
-                    ctx.vm.required_nfs_volumes === undefined) {
+                    ctx.vm.volumes === undefined) {
                     next();
                     return;
                 }
@@ -930,7 +930,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                 volumeOwnerUuid = ctx.vm.owner_uuid;
 
                 log.info({
-                    volumes: ctx.vm.required_nfs_volumes,
+                    volumes: ctx.vm.volumes,
                     vm: ctx.vm
                 }, 'Loading volumes required by VM');
 
@@ -981,7 +981,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                             done();
                         });
                     },
-                    inputs: ctx.vm.required_nfs_volumes
+                    inputs: ctx.vm.volumes
                 }, function onRequiredVolsLoaded(loadErr) {
                     ctx.volumesToProcess = requiredVolumes;
                     next(loadErr);
