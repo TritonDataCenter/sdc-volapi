@@ -12,6 +12,7 @@ var assert = require('assert-plus');
 var libuuid = require('libuuid');
 var Logger = require('bunyan');
 var test = require('tape');
+var util = require('util');
 var vasync = require('vasync');
 
 var clientsSetup = require('./lib/clients-setup');
@@ -231,6 +232,8 @@ test('listing nfs shared volumes with an invalid predicate', function (tt) {
 });
 
 test('listing nfs shared volumes with simple predicates', function (tt) {
+    var snowflakeUuid1 = libuuid.create();
+    var snowflakeUuid2 = libuuid.create();
     var snowflakeName1 =
             resources.makeResourceName(VOLUMES_NAMES_PREFIX + '-empty');
     var snowflakeName2 =
@@ -238,13 +241,13 @@ test('listing nfs shared volumes with simple predicates', function (tt) {
 
     var testVolumeObjects = [
         {
-            uuid: libuuid.create(),
+            uuid: snowflakeUuid1,
             name: snowflakeName1,
             owner_uuid: UFDS_ADMIN_UUID,
             type: 'tritonnfs'
         },
         {
-            uuid: libuuid.create(),
+            uuid: snowflakeUuid2,
             name: snowflakeName2,
             owner_uuid: UFDS_ADMIN_UUID,
             type: 'tritonnfs'
@@ -303,30 +306,37 @@ test('listing nfs shared volumes with simple predicates', function (tt) {
             });
         });
 
-    tt.test('list test volume objects with simple predicate on name',
-        function (t) {
-            var predicate = {
-                eq: ['name', snowflakeName1]
-            };
+    tt.test('list test volume objects with simple predicates', function (t) {
+        var predicates = [
+            {eq: ['name', snowflakeName1]},
+            {eq: ['uuid', snowflakeUuid1]}
+        ];
 
-            API_CLIENTS.volapi.listVolumes({
-                predicate: JSON.stringify(predicate)
-            }, function onListVolumes(err, volumes) {
-                t.ifErr(err,
-                    'listing volumes with a name predicate should not '
-                        + 'error');
-                t.ok(Array.isArray(volumes),
-                    'response body should be an array');
-                t.equal(volumes.length, 1,
-                    'only one volume should be included in the response '
-                        + 'body');
-                t.equal(volumes[0].name, snowflakeName1,
-                    'the name of the volume returned in the response '
-                        + 'should be: ' + snowflakeName1 + ', got: '
-                        + volumes[0].name);
-                t.end();
-            });
+        vasync.forEachPipeline({
+            func: function runSimplePredTest(predicate, next) {
+                API_CLIENTS.volapi.listVolumes({
+                    predicate: JSON.stringify(predicate)
+                }, function onListVolumes(err, volumes) {
+                    t.ifErr(err,
+                        'listing volumes with a predicate '
+                            + util.inspect(predicate) + ' should not error');
+                    t.ok(Array.isArray(volumes),
+                        'response body should be an array');
+                    t.equal(volumes.length, 1,
+                        'only one volume should be included in the response '
+                            + 'body');
+                    t.equal(volumes[0].name, snowflakeName1,
+                        'the name of the volume returned in the response '
+                            + 'should be: ' + snowflakeName1 + ', got: '
+                            + volumes[0].name);
+                    next();
+                });
+            },
+            inputs: predicates
+        }, function onSimplePredTestsDone(err) {
+            t.end();
         });
+    });
 
     tt.test('removing test volume objects should succeed', function (t) {
         vasync.forEachParallel({
