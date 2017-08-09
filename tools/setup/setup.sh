@@ -225,40 +225,19 @@ function get_latest_img_uuid
     echo "$latest_branch_img_uuid"
 }
 
-function get_service_installed_img_uuid
-{
-    local service_name=$1
-    local installed_img_uuid
-
-    installed_img_uuid=$(sdc-sapi /services?name="$service_name" | \
-        json -Ha params.image_uuid)
-
-    echo "$installed_img_uuid"
-}
-
 function upgrade_core_service_to_latest_branch_image
 {
     local core_service_name=$1
     local branch_name=$2
 
-    local installed_img_uuid
     local latest_img_uuid
 
     echo "Making sure $core_service_name core zone is up to date..."
 
-    installed_img_uuid=$(get_service_installed_img_uuid "$core_service_name")
-    echo "Current installed $core_service_name image:"\
-        "$installed_img_uuid"
-
     latest_img_uuid=$(get_latest_img_uuid "$core_service_name" "$branch_name")
     if [ "x$latest_img_uuid" != "x" ]; then
-        if [ "$latest_img_uuid" != "$installed_img_uuid" ]; then
-            echo "Updating $core_service_name to image ${latest_img_uuid}"
-            sdcadm up -y -C experimental "$core_service_name@$latest_img_uuid"
-        else
-            echo "$core_service_name is up to date with latest $branch_name"\
-                "version"
-        fi
+        echo "Updating $core_service_name to image ${latest_img_uuid}"
+        sdcadm up -y -C experimental "$core_service_name@$latest_img_uuid"
     else
         fatal "Could not find latest $core_service_name version built from"\
             "branch $branch_name"
