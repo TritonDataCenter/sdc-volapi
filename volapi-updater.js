@@ -839,7 +839,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                     next(getVmErr);
                 });
             },
-            function loadVolumesRefedByAbsentVm(ctx, next) {
+            function loadVolumesRefedByVmWithNoVolumesInfo(ctx, next) {
                 var listVolumesParams;
 
                 if (ctx.shouldAddReferences !== true &&
@@ -854,13 +854,16 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
 
                 /*
                  * When the VM for which we update its volume references and
-                 * reservations does not exist, we can't load the volumes that
-                 * it might have referenced if and when it existed. Moreover,
-                 * since VMAPI doesn't delete VMs, the VM can only be absent
-                 * from VMAPI when we're updating references and reservations as
-                 * a result of a workflow failing or being in the state
-                 * "executing" for too long, and that somehow the VM object was
-                 * not created in VMAPI. So we're in either of two cases:
+                 * reservations does not exist, or does not have any data about
+                 * the volumes it requires, we can't load the volumes that
+                 * it might have referenced if and when it existed.
+                 *
+                 * If we're dealing with a non-existent VM, and since VMAPI
+                 * doesn't delete VMs, the VM can only be absent from VMAPI when
+                 * we're updating references and reservations as a result of a
+                 * workflow failing or being in the state "executing" for too
+                 * long, and that somehow the VM object was not created in
+                 * VMAPI. So we're in either of two cases:
                  *
                  * 1. The VM actually exists on a CN, and will eventually show
                  *    up in VMAPI because vm-agent will PUT it. References may
@@ -876,7 +879,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                  *
                  * In both cases, it is fine to delete any reservation.
                  */
-                if (ctx.vm !== undefined) {
+                if (ctx.vm !== undefined && ctx.vm.volumes !== undefined) {
                     next();
                     return;
                 }
@@ -909,6 +912,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
             },
             function loadVolumesRefedByExistentVm(ctx, next) {
                 var requiredVolumes = [];
+                var volumeNames;
                 var volumeOwnerUuid;
 
                 if (ctx.shouldAddReferences !== true &&
@@ -927,6 +931,10 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                     return;
                 }
 
+                volumeNames = ctx.vm.volumes.map(function getVolNames(volume) {
+                    mod_assert.string(volume.name, 'volume.name');
+                    return volume.name;
+                });
                 volumeOwnerUuid = ctx.vm.owner_uuid;
 
                 log.info({
@@ -981,7 +989,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                             done();
                         });
                     },
-                    inputs: ctx.vm.volumes
+                    inputs: volumeNames
                 }, function onRequiredVolsLoaded(loadErr) {
                     ctx.volumesToProcess = requiredVolumes;
                     next(loadErr);
