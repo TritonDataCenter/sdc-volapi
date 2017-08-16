@@ -45,8 +45,9 @@ test('listVolumeSizes', function (tt) {
                     'should have at least one volumeSize');
                 t.ok(volumeSizes[0].size, 'first volumeSize should have size,' +
                     ' got: ' + volumeSizes[0].size);
-                t.ok(volumeSizes[0].description, 'first volumeSize should ' +
-                    'have description, got: ' + volumeSizes[0].description);
+                t.equal(volumeSizes[0].type, 'tritonnfs',
+                    'first volumeSize should have type tritonnfs got: ' +
+                        volumeSizes[0].type);
 
                 // check that volume sizes are in ascending order
                 for (idx = 0; idx < volumeSizes.length; idx++) {

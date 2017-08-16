@@ -21,10 +21,15 @@ var testVolumes = require('./lib/volumes');
 var CLIENTS;
 
 function confirmBogusParam(t, endpoint, err) {
+    var expectedErrMsg =
+        'Validation error, causes: Error: invalid parameter: bogus';
+
     t.ok(err, endpoint + ' w/ bad param should result in an error');
-    t.equal((err ? err.message : ''),
-        'Validation error, causes: Error: invalid parameter: bogus',
-        'expected error due to invalid parameter');
+
+    if (err) {
+        t.notEqual(err.message.indexOf(expectedErrMsg), -1,
+            'expected error due to invalid parameter');
+    }
 }
 
 test('setup', function (tt) {
