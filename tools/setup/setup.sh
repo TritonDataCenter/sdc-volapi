@@ -307,11 +307,11 @@ upgrade_core_service_to_latest_branch_image "volapi" "master"
 upgrade_gz_tools_to_latest_branch_image tritonnfs
 
 # Now enable the flags in SAPI to enable NFS volumes support for docker and
-# CloudAPI, as well as the ability for docker containers to automount NFS
-# volumes
+# CloudAPI, as well as the ability to automount NFS volumes
 sdcadm experimental nfs-volumes docker
 sdcadm experimental nfs-volumes docker-automount
 sdcadm experimental nfs-volumes cloudapi
+sdcadm experimental nfs-volumes cloudapi-automount
 EOS
 
 echo "VOLAPI setup done, reboot of all CNs is needed before it can be used"
