@@ -295,6 +295,7 @@ sdcadm post-setup volapi
 
 upgrade_core_service_to_latest_branch_image "sdc" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "workflow" "tritonnfs"
+upgrade_core_service_to_latest_branch_image "cnapi" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "vmapi" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "docker" "tritonnfs"
 upgrade_core_service_to_latest_branch_image "cloudapi" "tritonnfs"
