@@ -554,7 +554,8 @@ function updateAllVolumesFromVmApi(vmapiClient, log, callback) {
     mod_assert.func(callback, 'callback');
 
     vmapiClient.listVms({
-        'tag.smartdc_role': mod_volumeUtils.NFS_SHARED_VOLUME_SMARTDC_ROLE
+        'internal_metadata.sdc:system_role':
+            mod_volumeUtils.NFS_SHARED_VOLUME_SYSTEM_ROLE
     }, function onGetAllVolumesVms(getVmsErr, volumeVms) {
         if (getVmsErr) {
             log.error({error: getVmsErr}, 'Error when fetching VMs');
