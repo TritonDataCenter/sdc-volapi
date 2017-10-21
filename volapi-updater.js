@@ -536,7 +536,7 @@ function updateVolumeFromVmChangeEvent(vmChangeEvent, log, vmapiClient,
                     } else {
                         log.info({
                             storageVm: ctx.storageVm,
-                            volume: ctx.storageVm
+                            volume: ctx.volume
                         }, 'Successfully updated volume with storage ' +
                                 'vm');
                     }
