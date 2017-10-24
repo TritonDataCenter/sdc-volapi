@@ -5,7 +5,7 @@
 -->
 
 <!--
-    Copyright (c) 2016, Joyent, Inc.
+    Copyright (c) 2017, Joyent, Inc.
 -->
 
 # sdc-volapi
@@ -67,11 +67,10 @@ use volumes, just not through Docker APIs/clients.
   should be installed. By default, the installation process will use `coal` as
   the datacenter name.
 
-3. Install an experimental version of node-triton with NFS shared volumes
-   support:
+3. Install the latest version of node-triton to get NFS shared volumes support:
 
    ```
-   $ npm install ssh+git@github.com:joyent/node-triton.git#tritonnfs
+   $ npm install -g triton
    ```
 
 #### Disclaimer
