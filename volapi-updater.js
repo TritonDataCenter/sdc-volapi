@@ -841,6 +841,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
             },
             function loadVolumesRefedByVmWithNoVolumesInfo(ctx, next) {
                 var listVolumesParams;
+                var vmInternalMetadata;
 
                 if (ctx.shouldAddReferences !== true &&
                     ctx.shouldDeleteReferences !== true) {
@@ -879,7 +880,20 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                  *
                  * In both cases, it is fine to delete any reservation.
                  */
-                if (ctx.vm !== undefined && ctx.vm.volumes !== undefined) {
+                if (ctx.vm !== undefined) {
+                    vmInternalMetadata = ctx.vm.internal_metadata;
+                }
+
+                if (vmInternalMetadata &&
+                    (vmInternalMetadata['sdc:volumes'] !== undefined ||
+                    vmInternalMetadata['docker:nfsvolumes'] !== undefined)) {
+                    /*
+                     * The VM exists and its VM object in VMAPI contains the
+                     * data on which volume(s) it uses, so we'll use that
+                     * instead of what's in the VOLAPI moray buckets to
+                     * determine which volumes to process to add or delete
+                     * references.
+                     */
                     next();
                     return;
                 }
@@ -912,6 +926,9 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
             },
             function loadVolumesRefedByExistentVm(ctx, next) {
                 var requiredVolumes = [];
+                var parsedVmVolumesInternalMetadata;
+                var vmInternalMetadata;
+                var vmVolumesInternalMetadata;
                 var volumeNames;
                 var volumeOwnerUuid;
 
@@ -925,20 +942,41 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                     return;
                 }
 
-                if (ctx.vm === undefined ||
-                    ctx.vm.volumes === undefined) {
+                if (ctx.vm !== undefined) {
+                    vmInternalMetadata = ctx.vm.internal_metadata;
+                }
+
+                if (vmInternalMetadata === undefined ||
+                    vmInternalMetadata['sdc:volumes'] === undefined ||
+                    vmInternalMetadata['docker:nfsvolumes'] === undefined) {
                     next();
                     return;
                 }
 
-                volumeNames = ctx.vm.volumes.map(function getVolNames(volume) {
-                    mod_assert.string(volume.name, 'volume.name');
-                    return volume.name;
-                });
+                vmVolumesInternalMetadata = vmInternalMetadata['sdc:volumes'] ||
+                    vmInternalMetadata['docker:nfsvolumes'];
+
+                try {
+                    parsedVmVolumesInternalMetadata =
+                        JSON.parse(vmVolumesInternalMetadata);
+                } catch (parseErr) {
+                    next(parseErr);
+                    return;
+                }
+
+                mod_assert.arrayOfObject(parsedVmVolumesInternalMetadata,
+                    'parsedVmVolumesInternalMetadiata');
+
+                volumeNames = parsedVmVolumesInternalMetadata.map(
+                    function getVolNames(volume) {
+                        mod_assert.string(volume.name, 'volume.name');
+                        return volume.name;
+                    });
+
                 volumeOwnerUuid = ctx.vm.owner_uuid;
 
                 log.info({
-                    volumes: ctx.vm.volumes,
+                    volumes: parsedVmVolumesInternalMetadata,
                     vm: ctx.vm
                 }, 'Loading volumes required by VM');
 
@@ -1090,7 +1128,7 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
              * jobs that would still need to be monitored to determine if we
              * need to retry updating references later.
              */
-            function cleanupRes(ctx, next) {
+            function cleanupReservations(ctx, next) {
                 if (ctx.shouldAddReferences !== true &&
                     ctx.shouldDeleteReferences !== true) {
                     log.info({
