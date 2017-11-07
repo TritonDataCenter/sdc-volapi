@@ -201,9 +201,9 @@ function get_latest_img_uuid_using_imgapi_version
     do
         branch_img_uuid=$(updates-imgadm -C experimental get "${images[i]}" | \
             json -c "(version != null && \
-            version.indexOf('"${branch_pattern}"') !== -1) || \
+            version.match(/"${branch_pattern}"-\d{8}T\d{6}Z-g[a-z0-9]+/)) || \
             (tags != null && tags.buildstamp != null && \
-            tags.buildstamp.indexOf('"${branch_pattern}"') !== -1)" uuid)
+            tags.buildstamp.match(/"${branch_pattern}"-\d{8}T\d{6}Z-g[a-z0-9]+/))" uuid)
         if [[ "$branch_img_uuid" != "" ]]; then
             latest_branch_img_uuid=$branch_img_uuid
             break
@@ -223,8 +223,14 @@ function get_latest_img_uuid
         update_channel_name="experimental"
     fi
 
+    # The "${branch_pattern}-([0-9])+T([0-9)+Z-g([a-z0-9])+" regexp could be
+    # stricter, but since it seems "egrep" lacks support for quantifiers
+    # ("{n,m}") I couldn't come up with a way to make it stricter without
+    # repeating several parts of it to a point where it would become a lot less
+    # readable.
     latest_branch_img_uuid=$(/opt/smartdc/bin/updates-imgadm -H -C \
-        "$update_channel_name" list name=$image_name | grep $branch_pattern | \
+        "$update_channel_name" list name=$image_name | \
+        egrep "${branch_pattern}-([0-9])+T([0-9)+Z-g([a-z0-9])+" | \
         tail -1 | cut -d ' ' -f 1)
 
     echo "$latest_branch_img_uuid"
