@@ -50,53 +50,38 @@ use volumes, just not through Docker APIs/clients.
 
 ### Installation
 
-1. Checkout VOLAPI's source code:
+1. Install and enable the VOLAPI service by running the following command on
+   your DC's headnode:
 
-  ```
-  $ git clone git@github.com:joyent/sdc-volapi.git
-  $ cd sdc-volapi
-  ```
+   ```
+   $ sdcadm post-setup volapi
+   ```
 
-2. Install and enable the VOLAPI service:
+2. Enable NFS volumes feature flags by running the following commands on your
+   DC's headnode:
 
-  ```
-  $ sh tools/setup/setup.sh $DC_NAME
-  ```
+   ```
+   # Enables support for creating/managing NFS volumes with the docker API and
+   # the docker volume commands
+   $ sdcadm experimental nfs-volumes docker
 
-  where `$DC_NAME` is the name of the datacenter in which the VOLAPI service
-  should be installed. By default, the installation process will use `coal` as
-  the datacenter name.
+   # Enables support for docker containers to automatically mount NFS volumes
+   # at startup time
+   $ sdcadm experimental nfs-volumes docker-automount
+
+   # Enables support for creating/managing NFS volumes with CloudAPI
+   $ sdcadm experimental nfs-volumes cloudapi
+
+   # Enables support for non-Docker VMs (except KVM VMs) to automatically mount
+   # NFS volumes at startup time
+   $ sdcadm experimental nfs-volumes cloudapi-automount
+   ```
 
 3. Install the latest version of node-triton to get NFS shared volumes support:
 
    ```
    $ npm install -g triton
    ```
-
-#### Disclaimer
-
-Running `tools/setup/setup.sh` goes through all the steps necessary to enable
-support for NFS shared volumes in any datacenter (including COAL). It updates
-other core Triton services, such as sdc-docker, to different versions from
-feature branches that include changes needed to support shared volumes
-management. It also adds packages into PAPI and services into SAPI, among other
-things.
-
-As a result, when enabling this new service in COAL, it is no longer possible to
-update services that play a role in supporting NFS shared volumes as usual. For
-instance, updating the Docker API to the latest development version from the
-master branch would break support for `tritonnfs` volumes.
-
-The feature branches of all the repositories that are used to support the
-Volumes API are regularly rebased on top of the current development (master)
-branch, but not immediately. Thus, running this script is not recommended when
-the ability to use latest development features of Triton is needed at all times.
-
-There is also not automated procedure for uninstalling support for the Volumes
-API, and going back to using the latest development branch (master) for all
-Triton repositories.
-
-In other words, __use at your own risk__.
 
 ## Contributing changes
 
