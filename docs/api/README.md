@@ -92,8 +92,8 @@ Volumes are be represented as objects that share a common set of properties:
 
 * `name`: the volume's name. It must be unique for a given user. This is similar
   to the `alias` property of VMAPI's VM objects. It must match the regular
-  expression `/^[a-zA-Z0-9][a-zA-Z0-9_\.\-]+$/`. There is no limit on the length
-  of a volume's name.
+  expression `/^[a-zA-Z0-9][a-zA-Z0-9_\.\-]+$/`. The maximum number of
+  characters for a volume name is 256.
 
 * `type`: identifies the volume's type. There is currently one possible value
   for this property: `tritonnfs`. Additional types can be added in the future,
@@ -259,7 +259,7 @@ A [volume object](#volume-objects) representing the volume with UUID `uuid`.
 
 | Param         | Type         | Description                              |
 | ------------- | ------------ | ---------------------------------------- |
-| name          | String       | The desired name for the volume. If missing, a unique name for the current user will be generated |
+| name          | String       | The desired name for the volume. If missing, a unique name for the current user will be generated. Names cannot be longer than 256 characters |
 | owner_uuid    | String       | The UUID of the volume's owner. |
 | size          | Number       | The desired storage capacity for that volume in mebibytes. Default value is 10240 mebibytes (10 gibibytes). |
 | type          | String       | The type of volume. Currently only `'tritonnfs'` is supported. |

@@ -9,18 +9,16 @@
  */
 
 var assert = require('assert-plus');
+var jsprim = require('jsprim');
 var test = require('tape');
 var vasync = require('vasync');
 
 var clientsSetup = require('./lib/clients-setup');
 var configLoader = require('../../lib/config-loader');
-var resources = require('./lib/resources');
 
 var ADMIN_OWNED_FABRIC_NETWORK_UUID;
 var CLIENTS;
 var CONFIG = configLoader.loadConfigSync();
-var CREATED_VOLUMES = []; // volumes we created and need to destroy
-var NFS_SHARED_VOLUMES_NAMES_PREFIX = 'nfs-shared-volumes';
 var NFS_SHARED_VOLUMES_TYPE_NAME = 'tritonnfs';
 var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
 
@@ -61,50 +59,43 @@ test('setup', function (tt) {
     });
 });
 
-test('NFS shared volume creation with missing "name"', function (tt) {
-    tt.test('creating a nfs shared volume w/o name should generate one',
+test('NFS shared volume creation with invalid names', function (tt) {
+    tt.test('creating nfs shared volumes with invalid name should fail',
         function (t) {
-            var MISSING_NAME_PAYLOAD = {
+            var COMMON_PAYLOAD = {
                 owner_uuid: UFDS_ADMIN_UUID,
                 type: NFS_SHARED_VOLUMES_TYPE_NAME,
                 networks: [ADMIN_OWNED_FABRIC_NETWORK_UUID]
             };
+            /*
+             * 'x'.repeat(257) generates a volume name that is one character too
+             * long, as the max length for volume names is 256 characters.
+             */
+            var INVALID_NAMES = ['', '-foo', '.foo', 'x'.repeat(257)];
 
-            CLIENTS.volapi.createVolumeAndWait(MISSING_NAME_PAYLOAD,
-                function onVolumeCreated(err, volume) {
-                    t.ifErr(err, 'volume creation with no name should succeed');
+            vasync.forEachParallel({
+                func: function createVolume(volumeName, done) {
+                    var createVolumeParams = jsprim.deepCopy(COMMON_PAYLOAD);
+                    createVolumeParams.name = volumeName;
 
-                    t.equal(volume.name.length, 64,
-                        'expected 64 character name');
-                    t.ok(volume.name.match(/^[a-f0-9]*$/),
-                        'expected ^[a-f0-9]*$');
-                    t.equal(volume.name.substr(0, 32),
-                        volume.uuid.replace(/\-/g, ''),
-                        'expected uuid to match first 32 chars of volume '
-                            + 'name');
+                    CLIENTS.volapi.createVolumeAndWait(createVolumeParams,
+                        function onVolumeCreated(err, volume) {
+                            var expectedErrMsg = 'volume name';
 
-                    CREATED_VOLUMES.push(volume.uuid);
-
-                    t.end();
-                });
+                            t.ok(err, 'volume creation with name ' +
+                                createVolumeParams.name + ' should error');
+                            if (err) {
+                                t.notEqual(err.message.indexOf(expectedErrMsg),
+                                    -1, 'error message should include ' +
+                                        expectedErrMsg + ', got: ' +
+                                        err.message);
+                            }
+                            done();
+                        });
+                },
+                inputs: INVALID_NAMES
+            }, function invalidNamesTested(err, results) {
+                t.end();
+            });
         });
-});
-
-test('teardown', function (tt) {
-    tt.test('cleanup', function (t) {
-        vasync.forEachParallel({
-            func: function deleteVolume(volumeUuid, done) {
-                CLIENTS.volapi.deleteVolumeAndWait({
-                    uuid: volumeUuid,
-                    owner_uuid: UFDS_ADMIN_UUID
-                }, function onVolumeDeleted(err) {
-                    t.ifErr(err, 'delete volume ' + volumeUuid);
-                    done();
-                });
-            },
-            inputs: CREATED_VOLUMES
-        }, function cleanupDone(err) {
-            t.end();
-        });
-    });
 });
