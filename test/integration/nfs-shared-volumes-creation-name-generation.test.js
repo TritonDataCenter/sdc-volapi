@@ -20,7 +20,6 @@ var ADMIN_OWNED_FABRIC_NETWORK_UUID;
 var CLIENTS;
 var CONFIG = configLoader.loadConfigSync();
 var CREATED_VOLUMES = []; // volumes we created and need to destroy
-var NFS_SHARED_VOLUMES_NAMES_PREFIX = 'nfs-shared-volumes';
 var NFS_SHARED_VOLUMES_TYPE_NAME = 'tritonnfs';
 var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
 
