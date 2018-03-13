@@ -99,7 +99,19 @@ test('Updating NFS shared volumes', function (tt) {
                 CLIENTS.volapi.updateVolume({
                     uuid: CREATED_VOLUMES[0],
                     name: UPDATED_VOLUME_NAME
-                }, next);
+                }, function onVolUpdated(volUpdateErr, updatedVol) {
+                    t.ifError(volUpdateErr, 'updating volume should not error');
+                    t.ok(updatedVol,
+                        'volume update response should not be empty');
+
+                    if (updatedVol) {
+                        t.equal(updatedVol.name, UPDATED_VOLUME_NAME,
+                            'volume update should return volume with updated ' +
+                                'name');
+                    }
+
+                    next(volUpdateErr);
+                });
             },
             function checkVolumeUpdated(_, next) {
                 CLIENTS.volapi.getVolume({
@@ -128,8 +140,17 @@ test('Updating NFS shared volumes', function (tt) {
             function updateVol(_, next) {
                 CLIENTS.volapi.updateVolume({
                     uuid: CREATED_VOLUMES[0]
-                }, function onUpdateVol(updateVolErr) {
-                    t.ifError(updateVolErr, 'updating volume should succeed');
+                }, function onUpdateVol(updateVolErr, updatedVol) {
+                    t.ifError(updateVolErr, 'updating volume should not error');
+                    t.ok(updatedVol,
+                        'volume update response should not be empty');
+
+                    if (updatedVol) {
+                        t.equal(updatedVol.name, UPDATED_VOLUME_NAME,
+                            'volume update should return volume with updated ' +
+                                'name');
+                    }
+
                     next(updateVolErr);
                 });
             },
