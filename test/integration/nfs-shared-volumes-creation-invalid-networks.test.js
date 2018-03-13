@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -176,8 +176,8 @@ test('should fail to create volume on invalid networks', function (tt) {
             type: NFS_SHARED_VOLUMES_TYPE_NAME,
             networks: [NETWORKS['nonOwned'].uuid]
         }, function onVolumeCreated(err, volume) {
-            var expectedErrMsg =
-                'invalid network(s) specified: non-owned networks';
+            var expectedErrMsg = 'Invalid networks: not owned by user: ' +
+                    [NETWORKS['nonOwned'].uuid];
 
             t.ok(err, 'volume creation should result in an error');
             expectedError(t, err.message, expectedErrMsg,
@@ -193,8 +193,8 @@ test('should fail to create volume on invalid networks', function (tt) {
             type: NFS_SHARED_VOLUMES_TYPE_NAME,
             networks: [NETWORKS['nonFabric'].uuid]
         }, function onVolumeCreated(err, volume) {
-            var expectedErrMsg =
-                'invalid network(s) specified: non-fabric networks';
+            var expectedErrMsg = 'Invalid networks: non-fabric: ' +
+                [NETWORKS['nonFabric'].uuid];
 
             t.ok(err, 'volume creation should result in an error');
             expectedError(t, err.message, expectedErrMsg,
@@ -204,14 +204,15 @@ test('should fail to create volume on invalid networks', function (tt) {
         });
     });
     tt.test('test w/ non-existent network', function (t) {
+        var missingNetwork = libuuid.create();
+
         CLIENTS.volapi.createVolume({
             name: 'volapi-test-invalid-not-existing',
             owner_uuid: UFDS_ADMIN_UUID,
             type: NFS_SHARED_VOLUMES_TYPE_NAME,
-            networks: [libuuid.create()]
+            networks: [missingNetwork]
         }, function onVolumeCreated(err, volume) {
-            var expectedErrMsg =
-                'invalid network(s) specified: missing networks';
+            var expectedErrMsg = 'Invalid networks: missing: ' + missingNetwork;
 
             t.ok(err, 'volume creation should result in an error');
             expectedError(t, err.message, expectedErrMsg,
