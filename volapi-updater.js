@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright (c) 2018, Joyent, Inc.
  */
 
 /*
@@ -1063,11 +1063,10 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
 
                     mod_assert.optionalArrayOfUuid(volumeValue.refs,
                         'volumeValue.refs');
-                    volumeRefs = volumeValue.refs;
+                    volumeRefs = volumeValue.refs || [];
 
                     if (ctx.shouldAddReferences) {
-                        if (volumeRefs === undefined || volumeRefs === null ||
-                            volumeRefs.indexOf(vmUuid) === -1) {
+                        if (volumeRefs.indexOf(vmUuid) === -1) {
                             volumeRefs.push(vmUuid);
                             volumeObjectsToUpdate.push(volumeObj);
                         }
