@@ -5,7 +5,7 @@
 #
 
 #
-# Copyright (c) 2017, Joyent, Inc.
+# Copyright (c) 2018, Joyent, Inc.
 #
 
 #
@@ -26,7 +26,7 @@ JSSTYLE_FLAGS	 = -f tools/jsstyle.conf
 SERVICE_NAME     = volapi
 SMF_MANIFESTS_IN = smf/manifests/$(SERVICE_NAME)-server.xml.in smf/manifests/$(SERVICE_NAME)-updater.xml.in
 
-NODE_PREBUILT_VERSION=v4.6.1
+NODE_PREBUILT_VERSION=v4.9.0
 
 ifeq ($(shell uname -s),SunOS)
 	NODE_PREBUILT_TAG=zone
