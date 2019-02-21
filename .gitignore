@@ -1,5 +1,7 @@
+/make_stamps
 /node_modules
 /tmp
+bits
 build
 docs/*.json
 docs/*.html
@@ -8,3 +10,4 @@ cscope.po.out
 cscope.out
 smf/manifests/volapi-server.xml
 smf/manifests/volapi-updater.xml
+volapi-pkg-*.tar.gz
