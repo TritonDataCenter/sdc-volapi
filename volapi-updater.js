@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2018, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 /*
@@ -214,6 +214,7 @@ var mod_restify = require('restify');
 var mod_vasync = require('vasync');
 var mod_VError = require('verror');
 var path = require('path');
+var util = require('util');
 var VmapiClient = require('sdc-clients').VMAPI;
 var WfClient = require('wf-client');
 
@@ -346,9 +347,19 @@ function updateVolumeStateFromStorageVm(volume, storageVm) {
 function updateVolumeNfsPathFromStorageVm(volume, storageVm) {
     mod_assert.object(volume, 'volume');
     mod_assert.object(storageVm, 'storageVm');
+    mod_assert.string(storageVm.zonepath, 'storageVm.zonepath');
 
-    var fsPath = path.join(mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_BASEDIR,
-        mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_DIRNAME);
+    var old = false;
+    var fsPath;
+
+    if (old) {
+        fsPath = path.join(mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_BASEDIR,
+            mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_DIRNAME);
+    } else {
+        fsPath = path.join(storageVm.zonepath,
+            mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_DIRNAME);
+    }
+
     var remoteNfsPath;
     var storageVmIp;
 
