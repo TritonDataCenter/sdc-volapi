@@ -347,16 +347,20 @@ function updateVolumeStateFromStorageVm(volume, storageVm) {
 function updateVolumeNfsPathFromStorageVm(volume, storageVm) {
     mod_assert.object(volume, 'volume');
     mod_assert.object(storageVm, 'storageVm');
-    mod_assert.string(storageVm.zonepath, 'storageVm.zonepath');
 
-    var old = false;
     var fsPath;
+    var isV2StorageVm = storageVm.internal_metadata &&
+        storageVm.internal_metadata['volapi-nfs-version'] === 2;
 
-    if (old) {
-        fsPath = path.join(mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_BASEDIR,
+    if (isV2StorageVm) {
+        // When first provisioning, a vmobj will not have a zonepath set.
+        if (!storageVm.zonepath) {
+            return;
+        }
+        fsPath = path.join(storageVm.zonepath,
             mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_DIRNAME);
     } else {
-        fsPath = path.join(storageVm.zonepath,
+        fsPath = path.join(mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_BASEDIR,
             mod_volumeUtils.NFS_SHARED_VOLUME_EXPORTS_DIRNAME);
     }
 
