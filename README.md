@@ -18,6 +18,9 @@ The SDC Volumes API (VOLAPI) manages volumes for SDC. Volumes can be used to
 store data that can be read and/or written by virtual machines (including Docker
 containers, infrastructure containers and hardware virtual machines).
 
+For a complete overview of volapi, please read the
+[RFD 26](https://github.com/joyent/rfd/blob/master/rfd/0026/README.md) document.
+
 # Repository
     boot/           Shell scripts for booting and configuring the zone
     deps/           Git submodules that contains dependencies that this
@@ -34,6 +37,37 @@ containers, infrastructure containers and hardware virtual machines).
     package.json    npm module info (holds the project version)
     README.md
 
+# NFS Zone
+
+When a volume is created, volapi will provision a SmartOS zone with a fabric NIC
+attached. The zone will be marked with the following property:
+```
+  vm.internal_metadata['sdc:system_role'] = 'nfsvolumestorage';
+```
+
+The NFS volumes (zones) created by volapi come in two different versions.
+
+## Version 1
+
+Version 1 NFS volumes uses a Node.js server to handle the NFS connections.
+
+Version 1 is deprecated and volapi will try to create version 2 volumes
+when possible.
+
+## Version 2
+
+Version 2 NFS volumes use the SmartOS builtin NGZ (non global zone) NFS server.
+
+Volumes (zones) created with version 2 will have the following internal_metadata
+property set:
+
+```
+  vm.internal_metadata['volapi-nfs-version'] = 2;
+```
+
+Note that if a version 2 volume cannot be created (due to the requirement of a
+newer platform version not being available), then volapi will fallback to
+creating a version 1 NFS volume instead.
 
 # Development
 
