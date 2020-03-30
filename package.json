@@ -1,6 +1,6 @@
 {
   "name": "sdc-volapi",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "SDC's Volumes API",
   "main": "server.js",
   "scripts": {

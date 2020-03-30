@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2016, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 var assert = require('assert-plus');
@@ -37,6 +37,10 @@ function checkVolumeObjectFormat(volume, values, test) {
         typeof (volume.requested_size) === 'number',
             'newly created volume has an optional requested size');
     test.ok(volume.size, 'newly created volume should have a size');
+    if (volume.labels) {
+        test.ok(typeof (volume.labels) === 'object',
+            'volume labels should be an object');
+    }
 }
 
 module.exports = {

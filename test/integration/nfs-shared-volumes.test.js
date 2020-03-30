@@ -5,7 +5,7 @@
  */
 
 /*
- * Copyright (c) 2017, Joyent, Inc.
+ * Copyright 2020 Joyent, Inc.
  */
 
 var child_process = require('child_process');
@@ -44,6 +44,10 @@ var SSH_PUBLIC_KEY;
 var UFDS_ADMIN_UUID = CONFIG.ufdsAdminUuid;
 var VM_ADMIN_IP;
 var VM_UUID = libuuid.create();
+var VOLUME_LABELS = {
+    'firstlabel': 'this is the first label',
+    'second label': 'this is the second label'
+};
 
 assert.string(UFDS_ADMIN_UUID, 'UFDS_ADMIN_UUID');
 
@@ -176,6 +180,7 @@ test('nfs shared volumes', function (tt) {
 
     tt.test('creating a simple nfs shared volume should succeed', function (t) {
         var volumeParams = {
+            labels: VOLUME_LABELS,
             name: volumeName,
             owner_uuid: UFDS_ADMIN_UUID,
             type: NFS_SHARED_VOLUMES_TYPE_NAME,
@@ -205,6 +210,21 @@ test('nfs shared volumes', function (tt) {
                 'create_timestamp field should match ' + ISO_DATE_STRING_RE);
             t.end();
         });
+
+    tt.test('volume labels should be correct', function (t) {
+        t.deepEqual(sharedNfsVolume.labels, VOLUME_LABELS,
+            'volume labels should match');
+        t.end();
+    });
+
+    tt.test('should be able to get volume', function (t) {
+        CLIENTS.volapi.getVolume({uuid: sharedNfsVolume.uuid},
+                function onGetVolume(err, volume) {
+            t.ifErr(err, 'should be no error getting volume');
+            t.deepEqual(volume, sharedNfsVolume, 'volume objects should match');
+            t.end();
+        });
+    });
 
     tt.test('create a VM on same network as volume', function (t) {
         var payload = {
