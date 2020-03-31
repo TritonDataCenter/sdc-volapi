@@ -319,6 +319,17 @@ VolumesUpdater.prototype.init = function init(callback) {
     });
 };
 
+function updateVolumeLabelsFromStorageVm(volume, storageVm) {
+    mod_assert.object(volume, 'volume');
+    mod_assert.object(storageVm, 'storageVm');
+
+    if (storageVm.state !== 'destroyed' && storageVm.state !== 'failed') {
+        // Update the labels using the vm tags, in case someone manually
+        // changed the tags.
+        volume.labels = JSON.stringify(storageVm.tags || {});
+    }
+}
+
 function updateVolumeStateFromStorageVm(volume, storageVm) {
     mod_assert.object(volume, 'volume');
     mod_assert.object(storageVm, 'storageVm');
@@ -379,6 +390,7 @@ function updateVolumeFromStorageVm(volumeObject, storageVm, callback) {
     mod_assert.object(storageVm, 'storageVm');
     mod_assert.func(callback, 'callback');
 
+    updateVolumeLabelsFromStorageVm(volumeObject.value, storageVm);
     updateVolumeStateFromStorageVm(volumeObject.value, storageVm);
     updateVolumeNfsPathFromStorageVm(volumeObject.value, storageVm);
 
