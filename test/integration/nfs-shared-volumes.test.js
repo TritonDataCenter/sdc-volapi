@@ -174,7 +174,7 @@ test('setup', function (tt) {
 });
 
 test('nfs shared volumes', function (tt) {
-    var mountPoint = '/mnt';
+    const mountPoint = '/mnt';
     var nfsRemotePath;
     var sharedNfsVolume;
     var volumeName =
@@ -208,18 +208,33 @@ test('nfs shared volumes', function (tt) {
     tt.test('getting newly created nfs shared volume should output it in ' +
         'proper format', function (t) {
 
+            if (!sharedNfsVolume) {
+                t.end();
+                return;
+            }
+
             t.ok(ISO_DATE_STRING_RE.test(sharedNfsVolume.create_timestamp),
                 'create_timestamp field should match ' + ISO_DATE_STRING_RE);
             t.end();
         });
 
     tt.test('volume labels should be correct', function (t) {
+        if (!sharedNfsVolume) {
+            t.end();
+            return;
+        }
+
         t.deepEqual(sharedNfsVolume.labels, VOLUME_LABELS,
             'volume labels should match');
         t.end();
     });
 
     tt.test('should be able to get volume', function (t) {
+        if (!sharedNfsVolume) {
+            t.end();
+            return;
+        }
+
         CLIENTS.volapi.getVolume({uuid: sharedNfsVolume.uuid},
                 function onGetVolume(err, volume) {
             t.ifErr(err, 'should be no error getting volume');
@@ -229,6 +244,11 @@ test('nfs shared volumes', function (tt) {
     });
 
     tt.test('create a VM on same network as volume', function (t) {
+        if (!sharedNfsVolume) {
+            t.end();
+            return;
+        }
+
         var payload = {
             alias: resources.makeResourceName(NFS_SHARED_VOLUMES_VM_NAME_PREFIX,
                 VM_UUID),
@@ -284,6 +304,11 @@ test('nfs shared volumes', function (tt) {
     });
 
     tt.test('mounting the shared volume via NFS succeeds', function (t) {
+        if (!VM_ADMIN_IP) {
+            t.end();
+            return;
+        }
+
         nfsRemotePath = sharedNfsVolume.filesystem_path;
 
         child_process.exec([
@@ -301,6 +326,11 @@ test('nfs shared volumes', function (tt) {
     });
 
     tt.test('writing to the shared volume via NFS succeeds', function (t) {
+        if (!VM_ADMIN_IP) {
+            t.end();
+            return;
+        }
+
         child_process.exec([
             'ssh',
             '-o StrictHostKeyChecking=no',
@@ -321,19 +351,27 @@ test('nfs shared volumes', function (tt) {
             CLIENTS.volapi.listVolumes(function onVolumesListed(err, volumes) {
                 var newlyCreatedVolumeFound = false;
 
-                function isNewlyCreatedVolume(volumeObject) {
+                function isOurVolume(volumeObject) {
                     return volumeObject.uuid = sharedNfsVolume.uuid;
                 }
 
                 t.ifErr(err, 'listVolumes should not error');
-                newlyCreatedVolumeFound = volumes.some(isNewlyCreatedVolume);
-                t.ok(newlyCreatedVolumeFound,
-                    'newly created volume should be listed');
+                t.ok(Array.isArray(volumes), 'volumes should be an array');
+                if (Array.isArray(volumes)) {
+                    newlyCreatedVolumeFound = volumes.some(isOurVolume);
+                    t.ok(newlyCreatedVolumeFound,
+                        'newly created volume should be listed');
+                }
                 t.end();
             });
         });
 
     tt.test('create a VM that references the volume', function (t) {
+        if (!sharedNfsVolume) {
+            t.end();
+            return;
+        }
+
         var payload = {
             alias: resources.makeResourceName(NFS_SHARED_VOLUMES_VM_NAME_PREFIX,
                 REF_VM_UUID),
@@ -375,6 +413,10 @@ test('nfs shared volumes', function (tt) {
         CLIENTS.vmapi.createVmAndWait(payload, {},
             function onVmCreate(err, job) {
                 t.ifErr(err, 'VM creation should succeed');
+                if (err) {
+                    t.end();
+                    return;
+                }
 
                 CLIENTS.vmapi.getVm({uuid: REF_VM_UUID}, {},
                     function onGetVm(getErr, vmobj) {
@@ -397,6 +439,11 @@ test('nfs shared volumes', function (tt) {
     });
 
     tt.test('verify the volume is mounted and file was created', function (t) {
+        if (!REF_VM_ADMIN_IP) {
+            t.end();
+            return;
+        }
+
         child_process.exec([
             'ssh',
             '-o StrictHostKeyChecking=no',
@@ -414,6 +461,11 @@ test('nfs shared volumes', function (tt) {
     });
 
     tt.test('verify myfile2.txt is visible from the first vm', function (t) {
+        if (!VM_ADMIN_IP) {
+            t.end();
+            return;
+        }
+
         child_process.exec([
             'ssh',
             '-o StrictHostKeyChecking=no',
@@ -431,6 +483,11 @@ test('nfs shared volumes', function (tt) {
     });
 
     tt.test('unmounting the shared volume via NFS succeeds', function (t) {
+        if (!VM_ADMIN_IP) {
+            t.end();
+            return;
+        }
+
         child_process.exec([
             'ssh',
             '-o StrictHostKeyChecking=no',
@@ -449,7 +506,7 @@ test('nfs shared volumes', function (tt) {
         CLIENTS.volapi.get(opts, function onVolumeReferences(err, references) {
             t.ifErr(err, 'getVolumeReferences should not error');
             t.deepEqual(references, [REF_VM_UUID],
-                'volume references should the created vm');
+                'volume references should have the created vm');
             t.end();
         });
     });
