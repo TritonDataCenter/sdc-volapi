@@ -349,7 +349,7 @@ function updateVolumeStateFromStorageVm(volume, storageVm) {
     } else if (storageVm.state === 'failed') {
         volume.state = 'failed';
     } else if (storageVm.state === 'stopped') {
-        if (volume.state !== 'deleting') {
+        if (volume.state !== 'deleting' && volume.state !== 'creating') {
             volume.state = 'failed';
         }
     }
@@ -385,14 +385,24 @@ function updateVolumeNfsPathFromStorageVm(volume, storageVm) {
     }
 }
 
-function updateVolumeFromStorageVm(volumeObject, storageVm, callback) {
+function updateVolumeFromStorageVm(volumeObject, storageVm, log, callback) {
     mod_assert.object(volumeObject, 'volumeObject');
     mod_assert.object(storageVm, 'storageVm');
     mod_assert.func(callback, 'callback');
 
+    var oldState = volumeObject.value.state;
+
     updateVolumeLabelsFromStorageVm(volumeObject.value, storageVm);
     updateVolumeStateFromStorageVm(volumeObject.value, storageVm);
     updateVolumeNfsPathFromStorageVm(volumeObject.value, storageVm);
+
+    if (oldState !== volumeObject.value.state) {
+        log.info({
+            oldState: oldState,
+            state: volumeObject.value.state,
+            uuid: volumeObject.value.uuid
+        }, 'volume state changed');
+    }
 
     function updateVolume() {
         volumeModels.updateVolumeWithRetry(volumeObject.value.uuid,
@@ -408,7 +418,7 @@ function updateVolumeFromStorageVm(volumeObject, storageVm, callback) {
 
                             setTimeout(function retryUpdateVolume() {
                                 updateVolumeFromStorageVm(reloadedVolumeObject,
-                                    storageVm, callback);
+                                    storageVm, log, callback);
                             }, 2000);
                             return;
                         });
@@ -470,7 +480,7 @@ function updateVolumeFromVm(vm, log, callback) {
                 next();
                 return;
             } else {
-                updateVolumeFromStorageVm(ctx.volume, vm, next);
+                updateVolumeFromStorageVm(ctx.volume, vm, log, next);
             }
         }
     ], arg: context}, callback);
@@ -551,7 +561,7 @@ function updateVolumeFromVmChangeEvent(vmChangeEvent, log, vmapiClient,
                 storageVm: ctx.storageVm
             }, 'Updating volume from storage VM...');
 
-            updateVolumeFromStorageVm(ctx.volume, ctx.storageVm,
+            updateVolumeFromStorageVm(ctx.volume, ctx.storageVm, log,
                 function onVolumeUpdated(err) {
                     if (err) {
                         log.error({
