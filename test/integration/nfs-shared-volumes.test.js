@@ -366,6 +366,20 @@ test('nfs shared volumes', function (tt) {
             });
         });
 
+    tt.test('check volume references are empty', function (t) {
+        if (!sharedNfsVolume) {
+            t.end();
+            return;
+        }
+
+        var opts = { path: '/volumes/' + sharedNfsVolume.uuid + '/references'};
+        CLIENTS.volapi.get(opts, function onVolumeReferences(err, references) {
+            t.ifErr(err, 'getVolumeReferences should not error');
+            t.deepEqual(references, [], 'volume references should be empty');
+            t.end();
+        });
+    });
+
     tt.test('create a VM that references the volume', function (t) {
         if (!sharedNfsVolume) {
             t.end();
