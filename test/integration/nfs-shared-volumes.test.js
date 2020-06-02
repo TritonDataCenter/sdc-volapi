@@ -525,6 +525,51 @@ test('nfs shared volumes', function (tt) {
         });
     });
 
+    tt.test('verify cannot delete volume when referenced', function (t) {
+        var errMsg = 'Volume with name ' + sharedNfsVolume.name +
+            ' is used by vms: ' + REF_VM_UUID;
+        var EXPECTED_ERR = {
+            jse_shortmsg: '',
+            jse_info: {},
+            message: errMsg,
+            statusCode: 409,
+            body: {
+                code: 'VolumeInUse',
+                message: errMsg
+            },
+            restCode: 'VolumeInUse',
+            name: 'VolumeInUseError'
+        };
+        var opts = { path: '/volumes/' + sharedNfsVolume.uuid };
+
+        CLIENTS.volapi.del(opts, function onVolumeDelete(err) {
+            t.ok(err, 'deleteVolume should error');
+            if (err) {
+                t.deepEqual(err, EXPECTED_ERR,
+                    'delete volume error should be as expected');
+            }
+            t.end();
+        });
+    });
+
+    // This test when combined with the volume delete in the cleanup will ensure
+    // that we can delete a volume even though it has references left - because
+    // all the references that exist are invalid.
+    tt.test('add fake volume reference', function (t) {
+        var opts = {
+            path: '/volumes/' + sharedNfsVolume.uuid + '/addreference'
+        };
+        var data = {
+            owner_uuid: sharedNfsVolume.owner_uuid,
+            vm_uuid: libuuid.create()
+        };
+
+        CLIENTS.volapi.post(opts, data, function onVolumeAddRef(err) {
+            t.ifErr(err, 'AddVolumeReference should not error');
+            t.end();
+        });
+    });
+
     tt.test('cleanup', function (t) {
         vasync.parallel({funcs: [
             function deleteTestVM(done) {

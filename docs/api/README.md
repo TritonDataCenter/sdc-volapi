@@ -460,6 +460,42 @@ A list of VM UUIDs that are using the volume with UUID `uuid`:
 ]
 ```
 
+
+### AddVolumeReference POST /volumes/uuid/addreference
+
+`AddVolumeReference` can be used to manually add a VM to the references list.
+
+#### Input
+
+| Param         | Type    | Description                           |
+| ------------- | ------- | ------------------------------------- |
+| owner\_uuid   | UUID    | Owner UUID for the VM and also for the volume |
+| vm\_uuid      | UUID    | UUID of the VM to add to the volume reference list |
+
+
+#### Output
+
+Empty 204 HTTP response.
+
+
+### RemoveVolumeReference POST /volumes/uuid/removereference
+
+`RemoveVolumeReference` can be used to manually remove a VM to the references
+list.
+
+#### Input
+
+| Param         | Type    | Description                           |
+| ------------- | ------- | ------------------------------------- |
+| owner\_uuid   | UUID    | Owner UUID for the VM and also for the volume |
+| vm\_uuid      | UUID    | UUID of the VM to remove from the volume reference list |
+
+
+#### Output
+
+Empty 204 HTTP response.
+
+
 ## Volume reservations
 
 Volume references are useful to represent a "usage" relationship between
