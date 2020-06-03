@@ -1,6 +1,6 @@
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
 
 - [VOLAPI API](#volapi-api)
   - [Volume objects](#volume-objects)
@@ -34,18 +34,24 @@
   - [Volume references](#volume-references)
     - [GetVolumeReferences GET /volumes/uuid/references](#getvolumereferences-get-volumesuuidreferences)
       - [Output](#output-6)
+    - [AddVolumeReference POST /volumes/uuid/addreference](#addvolumereference-post-volumesuuidaddreference)
+      - [Input](#input-6)
+      - [Output](#output-7)
+    - [RemoveVolumeReference POST /volumes/uuid/removereference](#removevolumereference-post-volumesuuidremovereference)
+      - [Input](#input-7)
+      - [Output](#output-8)
   - [Volume reservations](#volume-reservations)
     - [Volume reservation objects](#volume-reservation-objects)
     - [Volume reservations' lifecycle](#volume-reservations-lifecycle)
     - [CreateVolumeReservation POST /volumereservations](#createvolumereservation-post-volumereservations)
-      - [Input](#input-6)
-      - [Output](#output-7)
-    - [DeleteVolumeReservation DELETE /volumereservations/uuid](#deletevolumereservation-delete-volumereservationsuuid)
-      - [Input](#input-7)
-      - [Output](#output-8)
-    - [ListVolumeReservations GET /volumereservations](#listvolumereservations-get-volumereservations)
       - [Input](#input-8)
       - [Output](#output-9)
+    - [DeleteVolumeReservation DELETE /volumereservations/uuid](#deletevolumereservation-delete-volumereservationsuuid)
+      - [Input](#input-9)
+      - [Output](#output-10)
+    - [ListVolumeReservations GET /volumereservations](#listvolumereservations-get-volumereservations)
+      - [Input](#input-10)
+      - [Output](#output-11)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -459,6 +465,42 @@ A list of VM UUIDs that are using the volume with UUID `uuid`:
    "b135a72a-1438-2829-aa42-17b231a6b63e"
 ]
 ```
+
+
+### AddVolumeReference POST /volumes/uuid/addreference
+
+`AddVolumeReference` can be used to manually add a VM to the references list.
+
+#### Input
+
+| Param         | Type    | Description                           |
+| ------------- | ------- | ------------------------------------- |
+| owner\_uuid   | UUID    | Owner UUID for the VM and also for the volume |
+| vm\_uuid      | UUID    | UUID of the VM to add to the volume reference list |
+
+
+#### Output
+
+Empty 204 HTTP response.
+
+
+### RemoveVolumeReference POST /volumes/uuid/removereference
+
+`RemoveVolumeReference` can be used to manually remove a VM to the references
+list.
+
+#### Input
+
+| Param         | Type    | Description                           |
+| ------------- | ------- | ------------------------------------- |
+| owner\_uuid   | UUID    | Owner UUID for the VM and also for the volume |
+| vm\_uuid      | UUID    | UUID of the VM to remove from the volume reference list |
+
+
+#### Output
+
+Empty 204 HTTP response.
+
 
 ## Volume reservations
 

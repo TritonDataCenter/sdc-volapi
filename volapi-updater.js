@@ -510,15 +510,15 @@ function updateVolumeFromVmChangeEvent(vmChangeEvent, log, vmapiClient,
             }, function onListVolumes(err, volumes) {
                 mod_assert.optionalArrayOfObject(volumes, 'volumes');
 
-                if (volumes) {
-                    log.debug({
-                        volumes: volumes
-                    }, 'VM is used as volume storage');
+                if (Array.isArray(volumes) && volumes.length > 0) {
+                    mod_assert.ok(volumes.length === 1,
+                        'Must be exactly one volume');
 
-                    mod_assert.ok(volumes.length <= 1);
-                    if (volumes.length > 0) {
-                        ctx.volume = volumes[0];
-                    }
+                    ctx.volume = volumes[0];
+
+                    log.debug({
+                        volume: ctx.volume
+                    }, 'VM is used as volume storage');
                 } else {
                     log.debug('VM is not used as volume storage');
                 }
@@ -985,8 +985,8 @@ function updateReferencesAndReservationsForVm(vmUuid, options, callback) {
                 }
 
                 if (vmInternalMetadata === undefined ||
-                    vmInternalMetadata['sdc:volumes'] === undefined ||
-                    vmInternalMetadata['docker:nfsvolumes'] === undefined) {
+                    (vmInternalMetadata['sdc:volumes'] === undefined &&
+                    vmInternalMetadata['docker:nfsvolumes'] === undefined)) {
                     next();
                     return;
                 }
